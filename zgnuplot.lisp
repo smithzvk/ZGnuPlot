@@ -72,53 +72,59 @@ same."
          (if-set plot-style plot (space-pad (mkstr "with " plot-style)))
          (if-set plot-type plot (space-pad (mkstr plot-type))) )))
 
-(defun gnuplot (state &rest plots)
+(defun %gnuplot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
          (st *gnuplot-state*) )
     (iter (for plot in plots)
-          (for file-name =
-               (pathname (osicat-posix:mktemp
-                          (namestring osicat:*temporary-directory*) )))
-          (for temp-file = (open file-name :direction :output))
-          (collecting file-name into file-names)
-          (collecting temp-file into temp-files)
-          (collecting (stringify-plot file-name plot)
-                      into plot-strings )
-          (if (equal (plot-style-of plot) "errorbars")
-              (iter (for x in (x-data-of plot))
-                    (for y in (y-data-of plot))
-                    (for eb in (error-bars-of plot))
-                    (when (and x y) (format-ext temp-file "~A ~A ~A~%" x y eb)) )
-              (iter (for x in (x-data-of plot))
-                    (for y in (y-data-of plot))
-                    (when (and x y) (format-ext temp-file "~A ~A~%" x y)) ))
-          (finally (mapc #'close temp-files)
-                   (cgn:format-gnuplot
-                    (mkstr "set pointsize " (point-size-of st) ";"
-                           (if-set title st
-                                   (space-pad (mkstr "set title '" title "';")) )
-                           (if-set x-label st
-                                   (space-pad (mkstr "set xlabel '" x-label "';")) )
-                           (if-set y-label st
-                                   (space-pad (mkstr "set ylabel '" y-label "';")) )
-                           (if-set x-range st
-                                   (format-ext nil "set xrange[~{~A~^:~}];"
-                                               x-range ))
-                           (if-set y-range st
-                                   (format-ext nil "set yrange[~{~A~^:~}];"
-                                               y-range ))
-                           "plot "
-                           "~{~A~^, ~}" )
-                    plot-strings )
-                   (return
-                     (aif (t-ret
-                            (< 0 (length
-                                  (:ret (mkstr
-                                         (coerce
-                                          (iter (for c = (read-char-no-hang cgn::*gnuplot*))
-                                                (while c)
-                                                (collect c) ) 'string ))))))
-                         (error it) ))))))
+      (for file-name =
+        (pathname (osicat-posix:mktemp
+                   (namestring osicat:*temporary-directory*) )))
+      (for temp-file = (open file-name :direction :output))
+      (collecting file-name into file-names)
+      (collecting temp-file into temp-files)
+      (collecting (stringify-plot file-name plot)
+                  into plot-strings )
+      (if (equal (plot-style-of plot) "errorbars")
+          (iter (for x in (x-data-of plot))
+            (for y in (y-data-of plot))
+            (for eb in (error-bars-of plot))
+            (when (and x y) (format-ext temp-file "~A ~A ~A~%" x y eb)) )
+          (iter (for x in (x-data-of plot))
+            (for y in (y-data-of plot))
+            (when (and x y) (format-ext temp-file "~A ~A~%" x y)) ))
+      (finally (mapc #'close temp-files)
+               (cgn:format-gnuplot
+                (mkstr "set pointsize " (point-size-of st) ";"
+                       (if-set title st
+                           (space-pad (mkstr "set title '" title "';")) )
+                       (if-set x-label st
+                           (space-pad (mkstr "set xlabel '" x-label "';")) )
+                       (if-set y-label st
+                           (space-pad (mkstr "set ylabel '" y-label "';")) )
+                       (if-set x-range st
+                           (format-ext nil "set xrange[~{~A~^:~}];"
+                                       x-range ))
+                       (if-set y-range st
+                           (format-ext nil "set yrange[~{~A~^:~}];"
+                                       y-range ))
+                       "plot "
+                       "~{~A~^, ~}" )
+                plot-strings )
+               (return
+                 (aif (t-ret
+                        (< 0 (length
+                              (:ret (mkstr
+                                     (coerce
+                                      (iter (for c = (read-char-no-hang cgn::*gnuplot*))
+                                        (while c)
+                                        (collect c) ) 'string ))))))
+                      (error it) ))))))
+
+(defun gnuplot (state &rest plots)
+  (if cgn::*gnuplot*
+      (apply #'%gnuplot state plots)
+      (cgn:with-gnuplot (:linux)
+        (apply #'%gnuplot state plots) )))
 
 (defun ensure-namestring (fname)
   (etypecase fname
