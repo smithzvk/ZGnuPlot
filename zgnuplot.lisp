@@ -131,25 +131,28 @@ same."
     (pathname (namestring fname))
     (string fname) ))
 
-(abbrev new make-instance)
-
 (defclass* terminal ()
   (linewidth
    canvas-size ))
 
-(defun save-plot (fname &key (term "postscript") size)
+(defparameter *default-term* "x11")
+
+(defun set-default-term (term)
+  (setf *default-term* term))
+
+(defun save-plot (fname &key (term "svg") size)
   (let ((fname (ensure-namestring fname)))
     (cgn:format-gnuplot
      (apply
       #'mkstr
       (remove nil
-              (list 
+              (list
                "set out '" fname "';"
                (when size
                  (format nil
                          "set size ~A;" size ))
                "set term " term ";"
-               "replot; set term wxt;"
+               "replot; set term " *default-term* ";"
                ;; replot to ensure that stupid terminals actually
                ;; finish output, don't know a better way...
                "replot" ))))))
