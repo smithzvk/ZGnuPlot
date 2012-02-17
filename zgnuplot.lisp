@@ -58,10 +58,13 @@
 replace instances of SLOT with the proper slot accessor.  In this case
 I am using WITH-SLOTS to do my walking for me, but the outcome is the
 same."
-  `(if (slot-boundp ,obj ',slot)
-       (with-slots (,slot) ,obj
-         ,on-bound )
-       ,on-not-bound ))
+  (let ((obj-sym (gensym)))
+    `(let ((,obj-sym ,obj))
+       (if (and (slot-exists-p ,obj-sym ',slot)
+                (slot-boundp ,obj ',slot))
+           (with-slots (,slot) ,obj-sym
+             ,on-bound)
+           ,on-not-bound))))
 
 (defun space-pad (string) (mkstr " " string " "))
 
