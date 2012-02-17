@@ -79,6 +79,8 @@ same."
 (defun %gnuplot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
          (st *gnuplot-state*) )
+    (unless plots
+      (error "No plots given") )
     (iter (for plot in plots)
       (for file-name =
         (pathname (osicat-posix:mktemp
