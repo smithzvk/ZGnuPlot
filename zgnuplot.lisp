@@ -66,7 +66,7 @@ same."
 (defun space-pad (string) (mkstr " " string " "))
 
 (defun stringify-plot (file-name plot)
-  (print (mkstr "'" (namestring file-name) "' "
+  (mkstr "'" (namestring file-name) "' "
          (if-set rep-label plot (space-pad (mkstr "title '" rep-label "'"))
                  (space-pad "notitle") )
          (if-set plot-style plot (space-pad (mkstr "with " plot-style)))
