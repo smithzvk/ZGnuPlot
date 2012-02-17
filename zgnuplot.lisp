@@ -82,6 +82,12 @@ same."
     (unless plots
       (error "No plots given") )
     (iter (for plot in plots)
+      (for x-data = (cond ((or (typep plot 'func-rep)
+                               (slot-boundp plot 'x-data))
+                           (x-data-of plot))
+                          (t (iter (for y in (y-data-of plot))
+                               (for i from 0)
+                               (collect i) ))))
       (for file-name =
         (pathname (osicat-posix:mktemp
                    (namestring osicat:*temporary-directory*) )))
