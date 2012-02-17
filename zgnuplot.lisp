@@ -99,17 +99,22 @@ same."
                (cgn:format-gnuplot
                 (mkstr "set pointsize " (point-size-of st) ";"
                        (if-set title st
-                           (space-pad (mkstr "set title '" title "';")) )
+                           (space-pad (mkstr "set title '" title "';"))
+                           (space-pad (mkstr "set title;")) )
                        (if-set x-label st
-                           (space-pad (mkstr "set xlabel '" x-label "';")) )
+                           (space-pad (mkstr "set xlabel '" x-label "';"))
+                           (space-pad (mkstr "unset xlabel;")) )
                        (if-set y-label st
-                           (space-pad (mkstr "set ylabel '" y-label "';")) )
+                           (space-pad (mkstr "set ylabel '" y-label "';"))
+                           (space-pad (mkstr "unset ylabel;")) )
                        (if-set x-range st
                            (format-ext nil "set xrange[~{~A~^:~}];"
-                                       x-range ))
+                                       x-range )
+                           (format-ext nil "unset xrange;") )
                        (if-set y-range st
                            (format-ext nil "set yrange[~{~A~^:~}];"
-                                       y-range ))
+                                       y-range )
+                           (format-ext nil "unset yrange;"))
                        "plot "
                        "~{~A~^, ~}" )
                 plot-strings )
