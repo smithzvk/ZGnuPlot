@@ -29,6 +29,7 @@
    (n-tics 100)
    (x-label) (y-label)
    (x-range) (y-range)
+   (autoscale)
    (point-size 1) ))
 
 (defparameter *gnuplot-state* (make-instance 'gnuplot-setup :x-range '(0 1)))
@@ -98,6 +99,9 @@ same."
       (finally (mapc #'close temp-files)
                (cgn:format-gnuplot
                 (mkstr "set pointsize " (point-size-of st) ";"
+                       (if-set autoscale st
+                           (space-pad (mkstr "set autoscale;"))
+                           (space-pad (mkstr "unset autoscale;")) )
                        (if-set title st
                            (space-pad (mkstr "set title '" title "';"))
                            (space-pad (mkstr "set title;")) )
