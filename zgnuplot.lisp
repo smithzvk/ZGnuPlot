@@ -8,19 +8,19 @@
    (rep-label)
    (x-data)
    (y-data)
-   (error-bars) ))
+   (error-bars)))
 
 (defclass* func-rep ()
   ((func)
    (plot-style "lines")
    (plot-type)
-   (rep-label) ))
+   (rep-label)))
 
 (defclass* surface-rep ()
   ((func)
    (plot-style "lines")
    (plot-type)
-   (rep-label) ))
+   (rep-label)))
 
 (defclass* gnuplot-setup ()
   ((title)
@@ -30,29 +30,29 @@
    (x-label) (y-label)
    (x-range) (y-range)
    (autoscale)
-   (point-size 1) ))
+   (point-size 1)))
 
 (defparameter *gnuplot-state* (make-instance 'gnuplot-setup :x-range '(0 1)))
 
 (defmethod x-data-of ((f-rep func-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect x) )))
+          (collect x))))
 
 (defmethod y-data-of ((f-rep func-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect (funcall (func-of f-rep) x)) )))
+          (collect (funcall (func-of f-rep) x)))))
 
 (defmethod x-data-of ((f-rep surface-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect x) )))
+          (collect x))))
 
 (defmethod y-data-of ((f-rep surface-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect (funcall (func-of f-rep) x)) )))
+          (collect (funcall (func-of f-rep) x)))))
 
 (defmacro if-set (slot obj on-bound &optional (on-not-bound ""))
   "This needs to be a macro since I must walk the syntax try to
@@ -72,72 +72,72 @@ same."
 (defun stringify-plot (file-name plot)
   (mkstr "'" (namestring file-name) "' "
          (if-set rep-label plot (space-pad (mkstr "title '" rep-label "'"))
-             (space-pad "notitle") )
+             (space-pad "notitle"))
          (if-set error-bars plot
              (if-set plot-style plot
                  (cond ((equal "lines" plot-style)
-                        (space-pad "with errorlines") )
+                        (space-pad "with errorlines"))
                        ((equal "points" plot-style)
-                        (space-pad "with errorbars") ))
-                 (space-pad "with errorbars") )
-             (if-set plot-style plot (space-pad (mkstr "with " plot-style))) )
-         (if-set plot-type plot (space-pad (mkstr plot-type))) ))
+                        (space-pad "with errorbars")))
+                 (space-pad "with errorbars"))
+             (if-set plot-style plot (space-pad (mkstr "with " plot-style))))
+         (if-set plot-type plot (space-pad (mkstr plot-type)))))
 
 (defun %gnuplot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
-         (st *gnuplot-state*) )
+         (st *gnuplot-state*))
     (unless plots
-      (error "No plots given") )
+      (error "No plots given"))
     (iter (for plot in plots)
       (for x-data = (cond ((or (typep plot 'func-rep)
                                (slot-boundp plot 'x-data))
                            (x-data-of plot))
                           (t (iter (for y in (y-data-of plot))
                                (for i from 0)
-                               (collect i) ))))
+                               (collect i)))))
       (for file-name =
         (pathname (osicat-posix:mktemp
-                   (namestring osicat:*temporary-directory*) )))
+                   (namestring osicat:*temporary-directory*))))
       (for temp-file = (open file-name :direction :output))
       (collecting file-name into file-names)
       (collecting temp-file into temp-files)
       (collecting (stringify-plot file-name plot)
-                  into plot-strings )
+                  into plot-strings)
       (if (and (typep plot 'data-rep)
                (slot-boundp plot 'error-bars)) ;; (equal (plot-style-of plot) "errorbars")
           (iter (for x in x-data)
             (for y in (y-data-of plot))
             (for eb in (error-bars-of plot))
-            (when (and x y eb) (format-ext temp-file "~A ~A ~A~%" x y eb)) )
+            (when (and x y eb) (format-ext temp-file "~A ~A ~A~%" x y eb)))
           (iter (for x in x-data)
             (for y in (y-data-of plot))
-            (when (and x y) (format-ext temp-file "~A ~A~%" x y)) ))
+            (when (and x y) (format-ext temp-file "~A ~A~%" x y))))
       (finally (mapc #'close temp-files)
                (cgn:format-gnuplot
                 (mkstr "set pointsize " (point-size-of st) ";"
                        (if-set autoscale st
                            (space-pad (mkstr "set autoscale;"))
-                           (space-pad (mkstr "unset autoscale;")) )
+                           (space-pad (mkstr "unset autoscale;")))
                        (if-set title st
                            (space-pad (mkstr "set title '" title "';"))
-                           (space-pad (mkstr "set title;")) )
+                           (space-pad (mkstr "set title;")))
                        (if-set x-label st
                            (space-pad (mkstr "set xlabel '" x-label "';"))
-                           (space-pad (mkstr "unset xlabel;")) )
+                           (space-pad (mkstr "unset xlabel;")))
                        (if-set y-label st
                            (space-pad (mkstr "set ylabel '" y-label "';"))
-                           (space-pad (mkstr "unset ylabel;")) )
+                           (space-pad (mkstr "unset ylabel;")))
                        (if-set x-range st
                            (format-ext nil "set xrange[~{~A~^:~}];"
-                                       x-range )
-                           (format-ext nil "unset xrange;") )
+                                       x-range)
+                           (format-ext nil "unset xrange;"))
                        (if-set y-range st
                            (format-ext nil "set yrange[~{~A~^:~}];"
-                                       y-range )
+                                       y-range)
                            (format-ext nil "unset yrange;"))
                        "plot "
-                       "~{~A~^, ~}" )
-                plot-strings )
+                       "~{~A~^, ~}")
+                plot-strings)
                (return
                  (aif (t-ret
                         (< 0 (length
@@ -145,23 +145,23 @@ same."
                                      (coerce
                                       (iter (for c = (read-char-no-hang cgn::*gnuplot*))
                                         (while c)
-                                        (collect c) ) 'string ))))))
-                      (error it) ))))))
+                                        (collect c)) 'string))))))
+                      (error it)))))))
 
 (defun gnuplot (state &rest plots)
   (if cgn::*gnuplot*
       (apply #'%gnuplot state plots)
       (cgn:with-gnuplot (:linux)
-        (apply #'%gnuplot state plots) )))
+        (apply #'%gnuplot state plots))))
 
 (defun ensure-namestring (fname)
   (etypecase fname
     (pathname (namestring fname))
-    (string fname) ))
+    (string fname)))
 
 (defclass* terminal ()
   (linewidth
-   canvas-size ))
+   canvas-size))
 
 (defparameter *default-term* "x11")
 
@@ -178,9 +178,9 @@ same."
                "set out '" fname "';"
                (when size
                  (format nil
-                         "set size ~A;" size ))
+                         "set size ~A;" size))
                "set term " term ";"
                "replot; set term " *default-term* ";"
                ;; replot to ensure that stupid terminals actually
                ;; finish output, don't know a better way...
-               "replot" ))))))
+               "replot"))))))

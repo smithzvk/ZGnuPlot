@@ -5,4 +5,4 @@
   :depends-on (:cffi :toolbox :defclass-star :iterate :cgn :osicat)
   :components ((:file "package")
                (:file "zgnuplot"))
-  :serial t )
+  :serial t)
