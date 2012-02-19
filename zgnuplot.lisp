@@ -1,27 +1,18 @@
 
 (in-package :zgnuplot)
 
-(defclass* data-rep ()
-  ((plot-style "points")
-   (plot-type)
-   (plot-smoothing)
-   (rep-label)
-   (x-data)
-   (y-data)
-   (error-bars)))
+;; @\section{Introduction}
 
-(defclass* func-rep ()
-  ((func)
-   (plot-style "lines")
-   (plot-type)
-   (rep-label)))
+;; @ZGnuplot is a library that aims to bring some polish to CL generated plots
+;; using gnuplot.  Gnuplot is an interesting program in that it is simple to get
+;; up and running and can also produce quite beautiful plots, but most users
+;; never wade through the dense docs to find out how those plots can be
+;; produced.  ZGnuplot will attempt to, at the very least, produce prettier
+;; plots by default.
 
-(defclass* surface-rep ()
-  ((func)
-   (plot-style "lines")
-   (plot-type)
-   (rep-label)))
+;; @\section{Overview}
 
+;;<<>>=
 (defclass* gnuplot-setup ()
   ((title)
    (key)
@@ -32,28 +23,43 @@
    (autoscale)
    (point-size 1)))
 
+;; @\section{2D Plotting}
+
+;; @\subsection{Plot Representations}
+
+;;<<>>=
+(defclass* data-rep ()
+  ((plot-style "points")
+   (plot-type)
+   (plot-smoothing)
+   (rep-label)
+   (x-data)
+   (y-data)
+   (error-bars)))
+
+;;<<>>=
+(defclass* func-rep ()
+  ((func)
+   (plot-style "lines")
+   (plot-type)
+   (rep-label)))
+
+;;<<>>=
 (defparameter *gnuplot-state* (make-instance 'gnuplot-setup :x-range '(0 1)))
 
+;;<<>>=
 (defmethod x-data-of ((f-rep func-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
           (collect x))))
 
+;;<<>>=
 (defmethod y-data-of ((f-rep func-rep))
   (destructuring-bind (low high) (x-range-of *gnuplot-state*)
     (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
           (collect (funcall (func-of f-rep) x)))))
 
-(defmethod x-data-of ((f-rep surface-rep))
-  (destructuring-bind (low high) (x-range-of *gnuplot-state*)
-    (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect x))))
-
-(defmethod y-data-of ((f-rep surface-rep))
-  (destructuring-bind (low high) (x-range-of *gnuplot-state*)
-    (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
-          (collect (funcall (func-of f-rep) x)))))
-
+;;<<>>=
 (defmacro if-set (slot obj on-bound &optional (on-not-bound ""))
   "This needs to be a macro since I must walk the syntax try to
 replace instances of SLOT with the proper slot accessor.  In this case
@@ -67,8 +73,10 @@ same."
              ,on-bound)
            ,on-not-bound))))
 
+;;<<>>=
 (defun space-pad (string) (mkstr " " string " "))
 
+;;<<>>=
 (defun stringify-plot (file-name plot)
   (mkstr "'" (namestring file-name) "' "
          (if-set rep-label plot (space-pad (mkstr "title '" rep-label "'"))
@@ -83,6 +91,9 @@ same."
              (if-set plot-style plot (space-pad (mkstr "with " plot-style))))
          (if-set plot-type plot (space-pad (mkstr plot-type)))))
 
+;; @\subsection{Plotting Curves}
+
+;;<<>>=
 (defun %plot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
          (st *gnuplot-state*))
@@ -148,12 +159,39 @@ same."
                                         (collect c)) 'string))))))
                       (error it)))))))
 
+;;<<>>=
 (defun plot (state &rest plots)
   (if cgn::*gnuplot*
       (apply #'%plot state plots)
       (cgn:with-gnuplot (:linux)
         (apply #'%plot state plots))))
 
+;; @\section{3D Plotting}
+
+;; @\subsection{Plot Representations}
+
+;;<<>>=
+(defclass* surface-rep ()
+  ((func)
+   (plot-style "lines")
+   (plot-type)
+   (rep-label)))
+
+;;<<>>=
+(defmethod x-data-of ((f-rep surface-rep))
+  (destructuring-bind (low high) (x-range-of *gnuplot-state*)
+    (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
+          (collect x))))
+
+;;<<>>=
+(defmethod y-data-of ((f-rep surface-rep))
+  (destructuring-bind (low high) (x-range-of *gnuplot-state*)
+    (iter (for x from low to high by (/ (- high low) (n-tics-of *gnuplot-state*)))
+          (collect (funcall (func-of f-rep) x)))))
+
+;; @\section{Plotting Surfaces}
+
+;;<<>>=
 (defun %splot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
          (st *gnuplot-state*))
@@ -219,26 +257,34 @@ same."
                                         (collect c)) 'string))))))
                       (error it)))))))
 
+;;<<>>=
 (defun splot (state &rest plots)
   (if cgn::*gnuplot*
       (apply #'%splot state plots)
       (cgn:with-gnuplot (:linux)
         (apply #'%splot state plots))))
 
+;;<<>>=
 (defun ensure-namestring (fname)
   (etypecase fname
     (pathname (namestring fname))
     (string fname)))
 
+;; @\section{Utilities and gnuplot settings}
+
+;;<<>>=
 (defclass* terminal ()
   (linewidth
    canvas-size))
 
+;;<<>>=
 (defparameter *default-term* "x11")
 
+;;<<>>=
 (defun set-default-term (term)
   (setf *default-term* term))
 
+;;<<>>=
 (defun save-plot (fname &key (term "svg") size)
   (let ((fname (ensure-namestring fname)))
     (cgn:format-gnuplot
