@@ -160,11 +160,29 @@ same."
                       (error it)))))))
 
 ;;<<>>=
+(defun infer-rep (obj)
+  (cond ((or (functionp obj) (symbolp obj))
+         (make-instance 'func-rep :func obj))
+        ((and (consp obj) (consp (car obj)))
+         (apply
+          #'make-instance 'data-rep
+          :x-data (mapcar #'first obj)
+          :y-data (mapcar #'second obj)
+          (if (> (length (first obj)) 2)
+              (list :error-bars
+                    (mapcar #'caddr
+                            obj)
+                    :plot-style "errorbars"))))
+        ((consp obj)
+         (make-instance 'data-rep :y-data obj))
+        (t obj)))
+
+;;<<>>=
 (defun plot (state &rest plots)
   (if cgn::*gnuplot*
-      (apply #'%plot state plots)
+      (apply #'%plot state (mapcar 'infer-rep plots))
       (cgn:with-gnuplot (:linux)
-        (apply #'%plot state plots))))
+        (apply #'%plot state (mapcar 'infer-rep plots)))))
 
 ;; @\section{3D Plotting}
 
