@@ -2,6 +2,8 @@
 (defpackage :zgnuplot
     (:use :cl :toolbox :defclass* :iter)
   (:nicknames :zgp)
-  (:export #:gnuplot #:gnuplot-setup
-           #:data-rep #:func-rep #:save-plot))
+  (:export #:gnuplot-setup
+           #:data-rep #:func-rep #:save-plot
+           #:splot
+           #:plot))
 

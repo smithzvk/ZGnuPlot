@@ -83,7 +83,7 @@ same."
              (if-set plot-style plot (space-pad (mkstr "with " plot-style))))
          (if-set plot-type plot (space-pad (mkstr plot-type)))))
 
-(defun %gnuplot (state &rest plots)
+(defun %plot (state &rest plots)
   (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
          (st *gnuplot-state*))
     (unless plots
@@ -104,7 +104,7 @@ same."
       (collecting (stringify-plot file-name plot)
                   into plot-strings)
       (if (and (typep plot 'data-rep)
-               (slot-boundp plot 'error-bars)) ;; (equal (plot-style-of plot) "errorbars")
+               (slot-boundp plot 'error-bars))
           (iter (for x in x-data)
             (for y in (y-data-of plot))
             (for eb in (error-bars-of plot))
@@ -148,11 +148,82 @@ same."
                                         (collect c)) 'string))))))
                       (error it)))))))
 
-(defun gnuplot (state &rest plots)
+(defun plot (state &rest plots)
   (if cgn::*gnuplot*
-      (apply #'%gnuplot state plots)
+      (apply #'%plot state plots)
       (cgn:with-gnuplot (:linux)
-        (apply #'%gnuplot state plots))))
+        (apply #'%plot state plots))))
+
+(defun %splot (state &rest plots)
+  (let* ((*gnuplot-state* (or state *gnuplot-state* (error "No gnuplot state set.")))
+         (st *gnuplot-state*))
+    (unless plots
+      (error "No plots given"))
+    (iter (for plot in plots)
+      (for x-data = (cond ((or (typep plot 'func-rep)
+                               (slot-boundp plot 'x-data))
+                           (x-data-of plot))
+                          (t (iter (for y in (y-data-of plot))
+                               (for i from 0)
+                               (collect i)))))
+      (for file-name =
+        (pathname (osicat-posix:mktemp
+                   (namestring osicat:*temporary-directory*))))
+      (for temp-file = (open file-name :direction :output))
+      (collecting file-name into file-names)
+      (collecting temp-file into temp-files)
+      (collecting (stringify-plot file-name plot)
+                  into plot-strings)
+      (if (and (typep plot 'data-rep)
+               (slot-boundp plot 'error-bars))
+          (iter (for x in x-data)
+            (for y in (y-data-of plot))
+            (for eb in (error-bars-of plot))
+            (when (and x y eb) (format-ext temp-file "~A ~A ~A~%" x y eb)))
+          (iter (for x in x-data)
+            (for y in (y-data-of plot))
+            (when (and x y) (format-ext temp-file "~A ~A~%" x y))))
+      (finally (mapc #'close temp-files)
+               (cgn:format-gnuplot
+                (mkstr "set pointsize " (point-size-of st) ";"
+                       (if-set autoscale st
+                           (space-pad (mkstr "set autoscale;"))
+                           (space-pad (mkstr "unset autoscale;")))
+                       (if-set title st
+                           (space-pad (mkstr "set title '" title "';"))
+                           (space-pad (mkstr "set title;")))
+                       (if-set x-label st
+                           (space-pad (mkstr "set xlabel '" x-label "';"))
+                           (space-pad (mkstr "unset xlabel;")))
+                       (if-set y-label st
+                           (space-pad (mkstr "set ylabel '" y-label "';"))
+                           (space-pad (mkstr "unset ylabel;")))
+                       (if-set x-range st
+                           (format-ext nil "set xrange[~{~A~^:~}];"
+                                       x-range)
+                           (format-ext nil "unset xrange;"))
+                       (if-set y-range st
+                           (format-ext nil "set yrange[~{~A~^:~}];"
+                                       y-range)
+                           (format-ext nil "unset yrange;"))
+                       "splot "
+                       "~{~A~^, ~}")
+                plot-strings)
+               (return
+                 (aif (t-ret
+                        (< 0 (length
+                              (:ret (mkstr
+                                     (coerce
+                                      (iter (for c = (read-char-no-hang cgn::*gnuplot*))
+                                        (while c)
+                                        (collect c)) 'string))))))
+                      (error it)))))))
+
+(defun splot (state &rest plots)
+  (if cgn::*gnuplot*
+      (apply #'%splot state plots)
+      (cgn:with-gnuplot (:linux)
+        (apply #'%splot state plots))))
 
 (defun ensure-namestring (fname)
   (etypecase fname
