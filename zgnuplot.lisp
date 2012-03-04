@@ -18,6 +18,7 @@
    (key)
    (tics)
    (n-tics 100)
+   (polar)
    (x-label) (y-label)
    (x-range) (y-range)
    (autoscale)
@@ -126,6 +127,8 @@ same."
       (finally (mapc #'close temp-files)
                (cgn:format-gnuplot
                 (mkstr "set pointsize " (point-size-of st) ";"
+                       (if-set polar st
+                           (space-pad (mkstr "set polar;")))
                        (if-set autoscale st
                            (space-pad (mkstr "set autoscale;"))
                            (space-pad (mkstr "unset autoscale;")))
