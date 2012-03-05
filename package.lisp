@@ -5,5 +5,7 @@
   (:export #:gnuplot-setup
            #:data-rep #:func-rep #:save-plot
            #:splot
-           #:plot))
+           #:plot
+           #:*gnuplot-setup*
+           #:with-gnuplot))
 
