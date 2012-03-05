@@ -53,7 +53,8 @@
    (z-tics t)
    (r-tics t)
    (theta-tics t)
-   (grid nil)
+   (grid (cond ((eql plot-type :polar) :polar)
+               (t t)))
    ;; When plotting functions, how many samples do we take?
    (n-samples 100)
    (adaptive-sampling nil)
