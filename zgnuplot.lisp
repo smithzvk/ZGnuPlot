@@ -80,6 +80,10 @@
 (defparameter *symbols*
   '(4 6 8 10 12 3 5 7 9 11 13))
 
+(defun keyword-to-string (keyword)
+  (let ((*print-case* :downcase))
+    (format nil "~A" keyword)))
+
 (defun setup-gnuplot (setup)
   (with-output-to-string (out)
     (iter
@@ -96,17 +100,21 @@
       (:polar (format-ext out "set polar;"))
       (:parametric (format-ext out "set parametric;"))
       (otherwise (format-ext out "unset parametric; unset polar;")))
-    (format-ext out "unset logscale;")
-    (iter (for coordinate in (logscale-of setup))
-      (format-ext out "set logscale ~A;" (case coordinate
-                                           (:x "x") (:y "y")
-                                           (:z "z") (:r "r"))))
+    (if (logscale-of setup)
+        (if (consp (logscale-of setup))
+            (iter (for coordinate in (logscale-of setup))
+              (format-ext out "set logscale ~A;" (keyword-to-string coordinate)))
+            (format-ext out "set logscale;"))
+        (format-ext out "unset logscale;"))
     (if (x-range-of setup)
         (format-ext out "set xrange[~{~A~^:~}];" (x-range-of setup)))
     (if (y-range-of setup)
         (format-ext out "set yrange[~{~A~^:~}];" (y-range-of setup)))
     (if (autoscale-of setup)
-        (format-ext out "set autoscale;")
+        (if (consp (autoscale-of setup))
+            (iter (for axis in (autoscale-of setup))
+              (format-ext out "set autoscale ~A;" (keyword-to-string axis)))
+            (format-ext out "set autoscale;"))
         (format-ext out "unset autoscale;"))
     (when (key-of setup)
       (format-ext out "set key ~A ~A ~A;"
