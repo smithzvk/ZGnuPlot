@@ -287,12 +287,10 @@
                        to (+ (* 1/2 range (/ (n-samples-of setup)))
                              (second (x-range-of setup)))
                        by (/ range (n-samples-of setup)))
-                 (format-ext out "~A ~A~%"
-                             x
-                             (if *ignore-errors*
-                                 (ignore-errors
-                                  (funcall (func-of plot) x))
-                                 (funcall (func-of plot) x))))))))
+                 (let ((val (if *ignore-errors*
+                                (ignore-errors (funcall (func-of plot) x))
+                                (funcall (func-of plot) x))))
+                   (when val (format-ext out "~A ~A~%" x val))))))))
   (apply
    #'mkstr
    (remove
