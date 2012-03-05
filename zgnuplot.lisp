@@ -301,11 +301,21 @@
 (defmethod stringify-plot ((plot func-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
     (cond ((error-bars-of plot)
-           (error "Can't do this yet.")
-           ;; (format-ext out "~{~A ~A~%~}" (mapcar #'list
-           ;;                                       (x-data-of plot)
-           ;;                                       (y-data-of plot)))
-           )
+           (warn "No error lines yet.")
+           (let ((range (- (second (x-range-of setup))
+                           (first (x-range-of setup)))))
+             (iter (for x
+                     from (first (x-range-of setup))
+                     to (+ (* 1/2 range (/ (n-samples-of setup)))
+                           (second (x-range-of setup)))
+                     by (/ range (n-samples-of setup)))
+               (let ((val (if *ignore-errors*
+                              (ignore-errors
+                               (multiple-value-list (funcall (func-of plot) x)))
+                              (multiple-value-list (funcall (func-of plot) x)))))
+                 (if val
+                     (format-ext out "~{~A ~}~%" (cons x val))
+                     (format-ext out "~%"))))))
           (t (let ((range (- (second (x-range-of setup))
                              (first (x-range-of setup)))))
                (iter (for x
@@ -316,7 +326,9 @@
                  (let ((val (if *ignore-errors*
                                 (ignore-errors (funcall (func-of plot) x))
                                 (funcall (func-of plot) x))))
-                   (when val (format-ext out "~A ~A~%" x val))))))))
+                   (if val
+                       (format-ext out "~A ~A~%" x val)
+                       (format-ext out "~%"))))))))
   (apply
    #'mkstr
    (remove
