@@ -23,12 +23,15 @@
    (plot-type :2d)
    ;; List all of the logscale coordinates
    (logscale nil)
+   ;; Plot shape
+   (size 1)
    ;; Controlling the key
    (key nil)
    (key-position :top-right)
    (key-verticle t)
    (key-inset t)
    ;; Controlling the tic-marks
+   (border t)
    (tics t)
    (x-tics t)
    (y-tics t)
@@ -43,10 +46,12 @@
    (title nil)
    (x-label nil) (y-label nil) (z-label nil)
    ;; Variable ranges
-   (x-range '(0 1)) (y-range '(0 1))
+   (x-range '(0 1)) (y-range '(0 1)) (z-range '(0 1))
    (theta-range '(0 1))
    (u-range '(0 1)) (v-range '(0 1))
-   (autoscale t)
+   ;; We don't use autoscale as it screws up when we plot functions
+   (autoscale (cond ((eql :2d plot-type) '(:y))
+                    ((eql :2d plot-type) '(:z))))
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
@@ -100,6 +105,9 @@
       (:polar (format-ext out "set polar;"))
       (:parametric (format-ext out "set parametric;"))
       (otherwise (format-ext out "unset parametric; unset polar;")))
+    (if (size-of setup)
+        (format-ext out "set size ~A;" (size-of setup))
+        (format-ext out "set size nosquare;"))
     (if (logscale-of setup)
         (if (consp (logscale-of setup))
             (iter (for coordinate in (logscale-of setup))
@@ -110,6 +118,8 @@
         (format-ext out "set xrange[~{~A~^:~}];" (x-range-of setup)))
     (if (y-range-of setup)
         (format-ext out "set yrange[~{~A~^:~}];" (y-range-of setup)))
+    (if (z-range-of setup)
+        (format-ext out "set zrange[~{~A~^:~}];" (z-range-of setup)))
     (if (autoscale-of setup)
         (if (consp (autoscale-of setup))
             (iter (for axis in (autoscale-of setup))
