@@ -17,8 +17,23 @@
 
 ;; @The class <<gnuplot-setup>> defines how a plot will be rendered.
 
+(defmacro defclass** (name supers slots)
+  `(progn
+     (defclass* ,name ,supers ,(mapcar #'first slots))
+     (defun ,(intern (concatenate 'string "MAKE-" (symbol-name name)))
+         (&key ,@slots)
+       (make-instance ',name ,@(apply
+                                #'append
+                                (mapcar
+                                 (lambda (x)
+                                   (let ((x (alexandria:ensure-list x)))
+                                     (list
+                                      (intern (symbol-name (first x)) :keyword)
+                                      (first x))))
+                                 slots))))))
+
 ;;<<>>=
-(defclass* gnuplot-setup ()
+(defclass** gnuplot-setup ()
   (;; Big picture options
    (plot-type :2d)
    ;; List all of the logscale coordinates
