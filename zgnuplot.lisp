@@ -38,8 +38,14 @@
    (plot-type :2d)
    ;; List all of the logscale coordinates
    (logscale nil)
-   ;; Plot shape
+   ;; This locks the axis to have equal metrics
+   (view-metric-equivalence (eql :polar plot-type))
+   ;; Plot size and shape
    (size 1)
+   (aspect-ratio (if (or view-metric-equivalence
+                         (eql :polar plot-type))
+                     1
+                     (/ 3 4d0)))
    ;; Controlling the key
    (key nil)
    (key-position :top-right)
@@ -121,10 +127,6 @@ are left to options in the individual plot objects."
        index color line-type (line-width-of setup)
        symbol (point-size-of setup)))
 
-    (if (size-of setup)
-        (format-ext out "set size ~A;" (size-of setup))
-        (format-ext out "set size nosquare;"))
-
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
     (if (logscale-of setup)
@@ -164,6 +166,13 @@ are left to options in the individual plot objects."
           (iter (for axis in autoscale)
             (format-ext out "set autoscale ~A;" (keyword-to-string axis))))
         (format-ext out "unset autoscale;"))
+
+    ;; Size and shape
+    (format-ext out "set size ~A;" (size-of setup))
+    (format-ext out "set size ratio ~A~,3F;"
+                (if (view-metric-equivalence-of setup)
+                    "-" "")
+                (aspect-ratio-of setup))
 
     (if (key-of setup)
         (format-ext out "set key ~A ~A ~A;"
@@ -214,7 +223,6 @@ are left to options in the individual plot objects."
     ;; If grid is set to T, use whatever gnuplot thinks is best unless plot-type
     ;; is polar, in which case we use a polar grid.  If the grid is set to a
     ;; something non-nil then make a grid on those axes.
-
     (format-ext out "set grid nopolar;") ; We need both to reset the grid
     (format-ext out "unset grid;")
     (cond ((and (eql t (grid-of setup)) (eql :polar (plot-type-of setup)))
