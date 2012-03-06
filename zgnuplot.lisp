@@ -67,9 +67,9 @@
    (title nil)
    (x-label nil) (y-label nil) (z-label nil)
    ;; Variable ranges
-   (x-range '(0 1))
-   (y-range '(0 1))
-   (z-range '(0 1))
+   (x-range '(-1 1))
+   (y-range '(-1 1))
+   (z-range '(-1 1))
    (theta-range (list (- pi) pi))
    (u-range '(0 1)) (v-range '(0 1))
    ;; We don't use autoscale as it screws up when we plot functions
