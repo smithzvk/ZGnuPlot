@@ -62,12 +62,16 @@
    (title nil)
    (x-label nil) (y-label nil) (z-label nil)
    ;; Variable ranges
-   (x-range '(0 1)) (y-range '(0 1)) (z-range '(0 1))
-   (theta-range '(0 1))
+   (x-range '(0 1))
+   (y-range '(0 1))
+   (z-range '(0 1))
+   (theta-range (list (- pi) pi))
    (u-range '(0 1)) (v-range '(0 1))
    ;; We don't use autoscale as it screws up when we plot functions
-   (autoscale (cond ((eql :2d plot-type) '(:y))
-                    ((eql :2d plot-type) '(:z))))
+   (autoscale (cond ;; ((eql :2d plot-type) '(:y))
+                    ((eql :polar plot-type) '(:r))
+                    ;; ((eql :3d plot-type) '(:z))
+                    ))
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
@@ -117,10 +121,6 @@
         pointtype ~A pointsize ~A;~%"
        index color line-type (line-width-of setup)
        symbol (point-size-of setup)))
-    (case (plot-type-of setup)
-      (:polar (format-ext out "set polar;"))
-      (:parametric (format-ext out "set parametric;"))
-      (otherwise (format-ext out "unset parametric; unset polar;")))
     (if (size-of setup)
         (format-ext out "set size ~A;" (size-of setup))
         (format-ext out "set size nosquare;"))
@@ -188,7 +188,11 @@
         (if (eql (grid-of setup) :polar)
             (format-ext out "set grid polar;")
             (format-ext out "set grid nopolar;"))
-        (format-ext out "unset grid;"))))
+        (format-ext out "unset grid;"))
+    (case (plot-type-of setup)
+      (:polar (format-ext out "set polar;"))
+      (:parametric (format-ext out "set parametric;"))
+      (otherwise (format-ext out "unset parametric; unset polar;")))))
 
 ;; @\section{2D Plotting}
 
@@ -300,35 +304,38 @@
 ;;<<>>=
 (defmethod stringify-plot ((plot func-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
-    (cond ((error-bars-of plot)
-           (warn "No error lines yet.")
-           (let ((range (- (second (x-range-of setup))
-                           (first (x-range-of setup)))))
-             (iter (for x
-                     from (first (x-range-of setup))
-                     to (+ (* 1/2 range (/ (n-samples-of setup)))
-                           (second (x-range-of setup)))
-                     by (/ range (n-samples-of setup)))
-               (let ((val (if *ignore-errors*
-                              (ignore-errors
-                               (multiple-value-list (funcall (func-of plot) x)))
-                              (multiple-value-list (funcall (func-of plot) x)))))
-                 (if val
-                     (format-ext out "~{~A ~}~%" (cons x val))
-                     (format-ext out "~%"))))))
-          (t (let ((range (- (second (x-range-of setup))
-                             (first (x-range-of setup)))))
+    (let ((range-vals (if (eql :polar (plot-type-of setup))
+                          (theta-range-of setup)
+                          (x-range-of setup))))
+      (cond ((error-bars-of plot)
+             (warn "No error lines yet.")
+             (let ((range (- (second range-vals)
+                             (first range-vals))))
                (iter (for x
-                       from (first (x-range-of setup))
+                       from (first range-vals)
                        to (+ (* 1/2 range (/ (n-samples-of setup)))
-                             (second (x-range-of setup)))
+                             (second range-vals))
                        by (/ range (n-samples-of setup)))
                  (let ((val (if *ignore-errors*
-                                (ignore-errors (funcall (func-of plot) x))
-                                (funcall (func-of plot) x))))
+                                (ignore-errors
+                                 (multiple-value-list (funcall (func-of plot) x)))
+                                (multiple-value-list (funcall (func-of plot) x)))))
                    (if val
-                       (format-ext out "~A ~A~%" x val)
-                       (format-ext out "~%"))))))))
+                       (format-ext out "~{~A ~}~%" (cons x val))
+                       (format-ext out "~%"))))))
+            (t (let ((range (- (second range-vals)
+                               (first range-vals))))
+                 (iter (for x
+                         from (first range-vals)
+                         to (+ (* 1/2 range (/ (n-samples-of setup)))
+                               (second range-vals))
+                         by (/ range (n-samples-of setup)))
+                   (let ((val (if *ignore-errors*
+                                  (ignore-errors (funcall (func-of plot) x))
+                                  (funcall (func-of plot) x))))
+                     (if val
+                         (format-ext out "~A ~A~%" x val)
+                         (format-ext out "~%")))))))))
   (apply
    #'mkstr
    (remove
