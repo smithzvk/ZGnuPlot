@@ -53,8 +53,7 @@
    (z-tics t)
    (r-tics t)
    (theta-tics t)
-   (grid (cond ((eql plot-type :polar) :polar)
-               (t t)))
+   (grid nil)
    ;; When plotting functions, how many samples do we take?
    (n-samples 100)
    (adaptive-sampling nil)
@@ -68,10 +67,7 @@
    (theta-range (list (- pi) pi))
    (u-range '(0 1)) (v-range '(0 1))
    ;; We don't use autoscale as it screws up when we plot functions
-   (autoscale (cond ;; ((eql :2d plot-type) '(:y))
-                    ((eql :polar plot-type) '(:r))
-                    ;; ((eql :3d plot-type) '(:z))
-                    ))
+   (autoscale nil)
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
@@ -124,13 +120,16 @@ are left to options in the individual plot objects."
         pointtype ~A pointsize ~A;~%"
        index color line-type (line-width-of setup)
        symbol (point-size-of setup)))
+
     (if (size-of setup)
         (format-ext out "set size ~A;" (size-of setup))
         (format-ext out "set size nosquare;"))
+
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
     (if (logscale-of setup)
-        (let ((logscale (if (eql t (logscale-of setup))
+        (let ((logscale (if (and (logscale-of setup)
+                                 (not (eql t (logscale-of setup))))
                             (alexandria:ensure-list (logscale-of setup))
                             (logscale-of setup))))
           (if (consp logscale)
@@ -138,6 +137,7 @@ are left to options in the individual plot objects."
                 (format-ext out "set logscale ~A;" (keyword-to-string coordinate)))
               (format-ext out "set logscale;")))
         (format-ext out "unset logscale;"))
+
     ;; Set ranges.  These should always have default values unless you
     ;; explicitly set them to NIL, in which case the old values will be used (or
     ;; something else less specified.
@@ -147,6 +147,7 @@ are left to options in the individual plot objects."
         (format-ext out "set yrange[~{~A~^:~}];" (y-range-of setup)))
     (if (z-range-of setup)
         (format-ext out "set zrange[~{~A~^:~}];" (z-range-of setup)))
+
     ;; If autoscale is explicitly set, use that value.  If it is just T, set it
     ;; to a `smart' value: (:x :y) for polar, (:y) for :2D, and (:z) for :3D.
     (if (autoscale-of setup)
@@ -156,24 +157,29 @@ are left to options in the individual plot objects."
                                    ((eql :2D (plot-type-of setup))
                                     (list :y))
                                    ((eql :3D (plot-type-of setup))
-                                    (list :z)))
+                                    (list :z))
+                                   (t (format-ext out "set autoscale;")
+                                      nil))
                              (alexandria:ensure-list (autoscale-of setup)))))
           (iter (for axis in autoscale)
             (format-ext out "set autoscale ~A;" (keyword-to-string axis))))
         (format-ext out "unset autoscale;"))
-    (when (key-of setup)
-      (format-ext out "set key ~A ~A ~A;"
-                  (if (key-inset-of setup) "inset" "out")
-                  (if (key-verticle-of setup) "vert" "horiz")
-                  (case (key-position-of setup)
-                    (:top-left "top left")
-                    (:top-center "top center")
-                    (:top-right "top right")
-                    (:center-left "center left")
-                    (:center-right "center right")
-                    (:bottom-left "bottom left")
-                    (:bottom-center "bottom center")
-                    (:bottom-right "bottom right"))))
+
+    (if (key-of setup)
+        (format-ext out "set key ~A ~A ~A;"
+                    (if (key-inset-of setup) "ins" "out")
+                    (if (key-verticle-of setup) "vert" "horiz")
+                    (case (key-position-of setup)
+                      (:top-left "top left")
+                      (:top-center "top center")
+                      (:top-right "top right")
+                      (:center-left "center left")
+                      (:center-right "center right")
+                      (:bottom-left "bottom left")
+                      (:bottom-center "bottom center")
+                      (:bottom-right "bottom right")))
+        (format-ext out "unset key;"))
+
     ;; Labels
     (if (title-of setup)
         (format-ext out "set title '~A';" (title-of setup))
@@ -187,6 +193,7 @@ are left to options in the individual plot objects."
     (if (z-label-of setup)
         (format-ext out "set zlabel '~A';" (z-label-of setup))
         (format-ext out "unset zlabel;"))
+
     ;; Tics
     (if (x-tics-of setup)
         (format-ext out "set xtics;")
@@ -203,11 +210,23 @@ are left to options in the individual plot objects."
     ;; (if (theta-tics-of setup)
     ;;     (format-ext out "set ttics;")
     ;;     (format-ext out "unset ttics;"))
-    (if (grid-of setup)
-        (if (eql (grid-of setup) :polar)
-            (format-ext out "set grid polar;")
-            (format-ext out "set grid nopolar;"))
-        (format-ext out "unset grid;"))
+
+    ;; If grid is set to T, use whatever gnuplot thinks is best unless plot-type
+    ;; is polar, in which case we use a polar grid.  If the grid is set to a
+    ;; something non-nil then make a grid on those axes.
+
+    (format-ext out "set grid nopolar;") ; We need both to reset the grid
+    (format-ext out "unset grid;")
+    (cond ((and (eql t (grid-of setup)) (eql :polar (plot-type-of setup)))
+           (format-ext out "set grid polar;"))
+          ((eql t (grid-of setup))
+           (format-ext out "set grid;"))
+          ((grid-of setup)
+           (iter (for grid-option in (alexandria:ensure-list (grid-of setup)))
+             (format-ext out "set grid ~Atics;" (keyword-to-string grid-option))))
+          (t (format-ext out "unset grid;")))
+
+    ;; Set the final gnuplot plotting style...
     (case (plot-type-of setup)
       (:polar (format-ext out "set polar;"))
       (:parametric (format-ext out "set parametric;"))
