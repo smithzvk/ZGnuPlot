@@ -366,9 +366,10 @@
       (collecting (stringify-plot plot st file-name)
                   into plot-strings)
       (finally (send-gnuplot (setup-gnuplot st))
-               (case (plot-type-of setup)
-                 (:2D (send-gnuplot "plot ~{~A~^, ~}" plot-strings))
-                 (:3D (send-gnuplot "splot ~{~A~^, ~}" plot-strings)))))))
+               (ecase (plot-type-of setup)
+                 (:3D (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
+                 ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings)))))
+    (send-gnuplot "replot;")))
 
 ;;<<>>=
 (defun plot (state &rest plots)
