@@ -110,6 +110,9 @@
     (format nil "~A" keyword)))
 
 (defun setup-gnuplot (setup)
+  "The job of this function is to create a string that holds all of the state
+for the gnuplot plot.  This means makes some intelligent defaults.  Some things
+are left to options in the individual plot objects."
   (with-output-to-string (out)
     (iter
       (for (color line-type) in (tb:roll-list (styles-of setup)))
@@ -124,23 +127,39 @@
     (if (size-of setup)
         (format-ext out "set size ~A;" (size-of setup))
         (format-ext out "set size nosquare;"))
+    ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
+    ;; it thinks it should do.
     (if (logscale-of setup)
-        (if (consp (logscale-of setup))
-            (iter (for coordinate in (logscale-of setup))
-              (format-ext out "set logscale ~A;" (keyword-to-string coordinate)))
-            (format-ext out "set logscale;"))
+        (let ((logscale (if (eql t (logscale-of setup))
+                            (alexandria:ensure-list (logscale-of setup))
+                            (logscale-of setup))))
+          (if (consp logscale)
+              (iter (for coordinate in logscale)
+                (format-ext out "set logscale ~A;" (keyword-to-string coordinate)))
+              (format-ext out "set logscale;")))
         (format-ext out "unset logscale;"))
+    ;; Set ranges.  These should always have default values unless you
+    ;; explicitly set them to NIL, in which case the old values will be used (or
+    ;; something else less specified.
     (if (x-range-of setup)
         (format-ext out "set xrange[~{~A~^:~}];" (x-range-of setup)))
     (if (y-range-of setup)
         (format-ext out "set yrange[~{~A~^:~}];" (y-range-of setup)))
     (if (z-range-of setup)
         (format-ext out "set zrange[~{~A~^:~}];" (z-range-of setup)))
+    ;; If autoscale is explicitly set, use that value.  If it is just T, set it
+    ;; to a `smart' value: (:x :y) for polar, (:y) for :2D, and (:z) for :3D.
     (if (autoscale-of setup)
-        (if (consp (autoscale-of setup))
-            (iter (for axis in (autoscale-of setup))
-              (format-ext out "set autoscale ~A;" (keyword-to-string axis)))
-            (format-ext out "set autoscale;"))
+        (let ((autoscale (if (eql t (autoscale-of setup))
+                             (cond ((eql :polar (plot-type-of setup))
+                                    (list :x :y))
+                                   ((eql :2D (plot-type-of setup))
+                                    (list :y))
+                                   ((eql :3D (plot-type-of setup))
+                                    (list :z)))
+                             (alexandria:ensure-list (autoscale-of setup)))))
+          (iter (for axis in autoscale)
+            (format-ext out "set autoscale ~A;" (keyword-to-string axis))))
         (format-ext out "unset autoscale;"))
     (when (key-of setup)
       (format-ext out "set key ~A ~A ~A;"
