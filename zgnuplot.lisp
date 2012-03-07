@@ -478,7 +478,7 @@ are left to options in the individual plot objects."
 ;;<<>>=
 (defun save-plot (fname &key (term "svg") size)
   (let ((fname (ensure-namestring fname)))
-    (cgn:format-gnuplot
+    (send-gnuplot
      (apply
       #'mkstr
       (remove nil
