@@ -119,9 +119,8 @@ Taken from LTK."
   (iter (while (read-char-no-hang *gnuplot-stream*)))
   (let ((command (apply #'format-ext nil control-string args)))
     ;; Send the command
-    (if *debug*
-        (format *gnuplot-stream* (print (format-ext nil "~A~%" command)))
-        (format *gnuplot-stream* "~A~%" command))
+    (if *debug* (print command))
+    (format *gnuplot-stream* "~A~%" command))
     ;; An extra command to ensure that the plotting is complete before moving on
     (format-ext *gnuplot-stream* "!echo !~%")
     (finish-output *gnuplot-stream*)
