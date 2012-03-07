@@ -151,8 +151,7 @@ are left to options in the individual plot objects."
           (if (consp logscale)
               (iter (for coordinate in logscale)
                 (format-ext out "set logscale ~A;" (keyword-to-string coordinate)))
-              (format-ext out "set logscale;")))
-        (format-ext out "unset logscale;"))
+              (format-ext out "set logscale;"))))
 
     ;; Set ranges.  These should always have default values unless you
     ;; explicitly set them to NIL, in which case the old values will be used (or
@@ -166,6 +165,7 @@ are left to options in the individual plot objects."
 
     ;; If autoscale is explicitly set, use that value.  If it is just T, set it
     ;; to a `smart' value: (:x :y) for polar, (:y) for :2D, and (:z) for :3D.
+    (format-ext out "unset autoscale;")
     (if (autoscale-of setup)
         (let ((autoscale (if (eql t (autoscale-of setup))
                              (cond ((eql :polar (plot-type-of setup))
@@ -178,16 +178,19 @@ are left to options in the individual plot objects."
                                       nil))
                              (alexandria:ensure-list (autoscale-of setup)))))
           (iter (for axis in autoscale)
-            (format-ext out "set autoscale ~A;" (keyword-to-string axis))))
-        (format-ext out "unset autoscale;"))
+            (format-ext out "set autoscale ~A;" (keyword-to-string axis)))))
 
     ;; Size and shape
+    (format-ext out "unset size;")
     (format-ext out "set size ~A;" (size-of setup))
+    ;; Aspect ratio
+    (format-ext out "set size noratio;")
     (format-ext out "set size ratio ~A~,3F;"
                 (if (view-metric-equivalence-of setup)
                     "-" "")
                 (aspect-ratio-of setup))
 
+    (format-ext out "unset key;")
     (if (key-of setup)
         (format-ext out "set key ~A ~A ~A;"
                     (if (key-inset-of setup) "ins" "out")
@@ -200,49 +203,42 @@ are left to options in the individual plot objects."
                       (:center-right "center right")
                       (:bottom-left "bottom left")
                       (:bottom-center "bottom center")
-                      (:bottom-right "bottom right")))
-        (format-ext out "unset key;"))
+                      (:bottom-right "bottom right"))))
 
     ;; Labels
+    (format-ext out "unset title;")
     (if (title-of setup)
-        (format-ext out "set title '~A';" (title-of setup))
-        (format-ext out "unset title;"))
+        (format-ext out "set title '~A';" (title-of setup)))
+    (format-ext out "unset xlabel;")
     (if (x-label-of setup)
-        (format-ext out "set xlabel '~A';" (x-label-of setup))
-        (format-ext out "unset xlabel;"))
+        (format-ext out "set xlabel '~A';" (x-label-of setup)))
+    (format-ext out "unset ylabel;")
     (if (y-label-of setup)
-        (format-ext out "set ylabel '~A';" (y-label-of setup))
-        (format-ext out "unset ylabel;"))
+        (format-ext out "set ylabel '~A';" (y-label-of setup)))
+    (format-ext out "unset zlabel;")
     (if (z-label-of setup)
-        (format-ext out "set zlabel '~A';" (z-label-of setup))
-        (format-ext out "unset zlabel;"))
+        (format-ext out "set zlabel '~A';" (z-label-of setup)))
 
     ;; Tics
     (format-ext out "unset tics;")
-    (cond ((x-tics-of setup)
-           (format-ext out "set xtics")
-           (when (consp (x-tics-of setup))
-             (format out "(~:{~S ~A~:^, ~})" (x-tics-of setup)))
-           (format-ext out ";"))
-          (t (format-ext out "unset xtics;")))
-    (cond ((y-tics-of setup)
-           (format-ext out "set ytics")
-           (when (consp (y-tics-of setup))
-             (format out "(~:{~S ~A~:^, ~})" (y-tics-of setup)))
-           (format-ext out ";"))
-          (t (format-ext out "unset ytics;")))
-    (cond ((z-tics-of setup)
-           (format-ext out "set ztics")
-           (when (consp (z-tics-of setup))
-             (format out "(~:{~S ~A~:^, ~})" (z-tics-of setup)))
-           (format-ext out ";"))
-          (t (format-ext out "unset ztics;")))
-    ;; (if (r-tics-of setup)
-    ;;     (format-ext out "set rtics;")
-    ;;     (format-ext out "unset rtics;"))
-    ;; (if (theta-tics-of setup)
-    ;;     (format-ext out "set ttics;")
-    ;;     (format-ext out "unset ttics;"))
+    (format-ext out "unset xtics;")
+    (when (x-tics-of setup)
+      (format-ext out "set xtics")
+      (when (consp (x-tics-of setup))
+        (format out "(~:{~S ~A~:^, ~})" (x-tics-of setup)))
+      (format-ext out ";"))
+    (format-ext out "unset ytics;")
+    (when (y-tics-of setup)
+      (format-ext out "set ytics")
+      (when (consp (y-tics-of setup))
+        (format out "(~:{~S ~A~:^, ~})" (y-tics-of setup)))
+      (format-ext out ";"))
+    (format-ext out "unset ztics;")
+    (when (z-tics-of setup)
+      (format-ext out "set ztics")
+      (when (consp (z-tics-of setup))
+        (format out "(~:{~S ~A~:^, ~})" (z-tics-of setup)))
+      (format-ext out ";"))
 
     ;; If grid is set to T, use whatever gnuplot thinks is best unless plot-type
     ;; is polar, in which case we use a polar grid.  If the grid is set to a
