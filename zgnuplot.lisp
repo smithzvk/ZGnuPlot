@@ -128,6 +128,7 @@
 for the gnuplot plot.  This means makes some intelligent defaults.  Some things
 are left to options in the individual plot objects."
   (with-output-to-string (out)
+    (format-ext out "set term ~A;~%" *default-term*)
     (iter
       (for (color line-type) in (tb:roll-list (styles-of setup)))
       (for symbol in (tb:roll-list *symbols*))
