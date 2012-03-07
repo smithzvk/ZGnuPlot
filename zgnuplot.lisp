@@ -471,7 +471,8 @@ are left to options in the individual plot objects."
                          (space-pad "with errorbars")))
                   (space-pad "with errorbars"))
               (if (plot-style-of plot)
-                  (space-pad (mkstr "with " (plot-style-of plot)
+                  (space-pad (mkstr "with " (plot-style-to-string
+                                             (plot-style-of plot))
                                     " linestyle " (incf *style*)))))))))
 
 ;; @\subsection{Plotting Curves}
