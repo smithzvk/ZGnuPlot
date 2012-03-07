@@ -133,6 +133,25 @@ Taken from LTK."
         (error ret)))))
 
 ;;<<>>=
+(defun send-gnuplot-raw (control-string &rest args)
+  "Send a string to the running gnuplot process."
+  ;; Flush any pending output
+  (iter (while (read-char-no-hang *gnuplot-stream*)))
+  (let ((command (apply #'format-ext nil control-string args)))
+    ;; Send the command
+    (if *debug* (print command))
+    (format *gnuplot-stream* "~A~%" command)
+    ;; An extra command to ensure that the plotting is complete before moving on
+    (format-ext *gnuplot-stream* "!echo !~%")
+    (finish-output *gnuplot-stream*)
+    (let* ((ret (coerce
+                 (iter (for char = (read-char *gnuplot-stream*))
+                   (until (eql char #\!))
+                   (collecting char))
+                 'string)))
+      (string-trim '(#\Space #\Newline #\Tab) ret))))
+
+;;<<>>=
 (defmacro with-gnuplot (&body body)
   `(let ()
      (start-gnuplot)
