@@ -495,7 +495,7 @@ are left to options in the individual plot objects."
       (finally (send-gnuplot (setup-gnuplot st))
                (let ((plot-strings
                        (apply #'append (mapcar #'alexandria:ensure-list
-                                               (print plot-strings)))))
+                                               plot-strings))))
                  (ecase (plot-type-of setup)
                    (:3D (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
                    ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
