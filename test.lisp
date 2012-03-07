@@ -35,8 +35,25 @@
                     (6 4.494679) (5 4.727989) (4 5.731714) (3 7.4953036)
                     (2 7.8560486) (1 8.624506))))
         (make-instance 'data-rep :plot-style "lines"
-                       :x-data (mapcar #'first data)
-                       :y-data (mapcar #'second data))))
+                                 :x-data (mapcar #'first data)
+                                 :y-data (mapcar #'second data))))
+
+(plot (zgp:make-gnuplot-setup :autoscale '(:y)
+                              :n-samples 5
+                              :x-range '(0 10)
+                              :x-label "Some x label"
+                              :y-label "Some y label")
+      (let ((data (mapcar (lambda (x) (list x (+ (cos x) x))) '(0 1 2 3 4 5 6 7 8 9))))
+        (make-instance 'data-rep :plot-style :smooth-lines-and-points
+                                 :smoothing-method :csplines
+                                 :x-data (mapcar #'first data)
+                                 :y-data (mapcar #'second data)))
+      (make-instance 'func-rep
+                     :smoothing-method :csplines
+                     :func (lambda (x) (+ (sin x) x)))
+      (make-instance 'func-rep
+                     ;; :smoothing-method :csplines
+                     :func (lambda (x) (+ (sin x) x))))
 
 ;; @\subsection{Error Bars}
 (plot (zgp:make-gnuplot-setup :autoscale '(:y :x)
