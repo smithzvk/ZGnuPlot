@@ -129,6 +129,7 @@ are left to options in the individual plot objects."
 
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
+    (format-ext out "unset logscale;")
     (if (logscale-of setup)
         (let ((logscale (if (and (logscale-of setup)
                                  (not (eql t (logscale-of setup))))
