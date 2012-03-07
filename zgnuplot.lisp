@@ -11,7 +11,19 @@
 ;; plots by default than gnuplot does out of the box.  It also attempts to
 ;; remove many of the inconsistencies that are in the gnuplot interface and to
 ;; remedy some of the limitations if possible, making for a simpler plotting
-;; utility.
+;; utility which is also extremely well suited for control from a Common Lisp
+;; system.
+
+;; If we are honest with ourselves, we should note that Gnuplot is not a very
+;; straight forward program to use.  It has all of the cruft and archaic feel
+;; of, say LaTeX, and seemingly no consistency at any level.  Gnuplot has the
+;; feel of a program that has accreted over many years to become a capable yet
+;; extremely inconsistent program.  So, in many ways, it is a fools errand to
+;; attempt to smooth out the Gnuplot interface via a wrapper.  Indeed, I feel
+;; that there is much to gain by using a solution such as Tamas Papp's plot
+;; library.  That said, Gnuplot has a very large install base and many terminals
+;; (output modules) which make it useful none-the-less.  The goal here is to
+;; lessen pain until something unequivocally better comes along.
 
 ;; @\section{Setting up the plot}
 
