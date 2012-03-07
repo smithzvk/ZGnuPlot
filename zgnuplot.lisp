@@ -275,7 +275,8 @@ are left to options in the individual plot objects."
    (rep-label nil)
    (x-data nil)
    (y-data)
-   (error-bars nil)))
+   (error-bars nil)
+   (smoothing-method :cspline)))
 
 ;;<<>>=
 (defclass* func-rep ()
@@ -283,7 +284,8 @@ are left to options in the individual plot objects."
    (plot-style "lines")
    (plot-type nil)
    (rep-label nil)
-   (error-bars nil)))
+   (error-bars nil)
+   (smoothing-method nil)))
 
 ;;<<>>=
 (defparameter *gnuplot-setup* (make-instance 'gnuplot-setup :x-range '(0 1)))
@@ -335,6 +337,17 @@ are left to options in the individual plot objects."
 (defmethod stringify-plot ((plot function) setup file-name)
   (infer-rep plot))
 
+(defun plot-style-to-string (style)
+  (if (stringp style)
+      style
+      (case style
+        (:lines-and-points "lp")
+        (:points "points")
+        (:lines "lines")
+        (:error-bars "errorbars")
+        (:smooth-lines-and-points
+         (error "This does not directly correspond to a gnuplot plot style")))))
+
 ;;<<>>=
 (defmethod stringify-plot ((plot data-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
@@ -346,26 +359,63 @@ are left to options in the individual plot objects."
                                 (y-data-of plot)
                                 (interprete-error-bars (y-data-of plot)
                                                        (error-bars-of plot)))))))
-  (apply
-   #'mkstr
-   (remove
-    nil
-    (list "'" (namestring file-name) "' "
-          (if (rep-label-of plot)
-              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
-              (space-pad "notitle"))
-          (if (error-bars-of plot)
-              (if (plot-style-of plot)
-                  (cond ((equal "lines" (plot-style-of plot))
-                         (space-pad "with errorlines"))
-                        ((equal "points" (plot-style-of plot))
-                         (space-pad "with errorbars")))
-                  (space-pad "with errorbars"))
-              (if (plot-style-of plot)
-                  (space-pad (mkstr "with " (plot-style-of plot)
-                                    " linestyle " (incf *style*)))))
-          (if (plot-type-of plot)
-              (space-pad (mkstr (plot-type-of plot))))))))
+  (if (eql :smooth-lines-and-points (plot-style-of plot))
+      ;; We want to draw a smooth line through these points
+      (list
+       (apply
+        #'mkstr
+        (remove
+         nil
+         (list "'" (namestring file-name) "' "
+               (if (rep-label-of plot)
+                   (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+                   (space-pad "notitle"))
+               (if (error-bars-of plot)
+                   (if (plot-style-of plot)
+                       (cond ((equal "lines" (plot-style-of plot))
+                              (space-pad "with errorlines"))
+                             ((equal "points" (plot-style-of plot))
+                              (space-pad "with errorbars")))
+                       (space-pad "with errorbars"))
+                   (if (plot-style-of plot)
+                       (space-pad (mkstr "with points linestyle " (incf *style*))))))))
+       (apply
+        #'mkstr
+        (remove
+         nil
+         (list "'" (namestring file-name) "' "
+               (if (rep-label-of plot)
+                   (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+                   (space-pad "notitle"))
+               " smooth " (keyword-to-string (smoothing-method-of plot))
+               (if (error-bars-of plot)
+                   (if (plot-style-of plot)
+                       (cond ((equal "lines" (plot-style-of plot))
+                              (space-pad "with errorlines"))
+                             ((equal "points" (plot-style-of plot))
+                              (space-pad "with errorbars")))
+                       (space-pad "with errorbars"))
+                   (if (plot-style-of plot)
+                       (space-pad (mkstr "with lines linestyle " *style*))))))))
+      (apply
+       #'mkstr
+       (remove
+        nil
+        (list "'" (namestring file-name) "' "
+              (if (rep-label-of plot)
+                  (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+                  (space-pad "notitle"))
+              (if (error-bars-of plot)
+                  (if (plot-style-of plot)
+                      (cond ((equal "lines" (plot-style-of plot))
+                             (space-pad "with errorlines"))
+                            ((equal "points" (plot-style-of plot))
+                             (space-pad "with errorbars")))
+                      (space-pad "with errorbars"))
+                  (if (plot-style-of plot)
+                      (space-pad (mkstr "with " (plot-style-to-string
+                                                 (plot-style-of plot))
+                                        " linestyle " (incf *style*))))))))))
 
 ;;<<>>=
 (defvar *ignore-errors* t)
@@ -413,6 +463,9 @@ are left to options in the individual plot objects."
           (if (rep-label-of plot)
               (space-pad (mkstr "title '" (rep-label-of plot) "'"))
               (space-pad "notitle"))
+          (if (smoothing-method-of plot)
+              (space-pad (mkstr "smooth " (keyword-to-string
+                                           (smoothing-method-of plot)))))
           (if (error-bars-of plot)
               (if (plot-style-of plot)
                   (cond ((equal "lines" (plot-style-of plot))
@@ -422,9 +475,7 @@ are left to options in the individual plot objects."
                   (space-pad "with errorbars"))
               (if (plot-style-of plot)
                   (space-pad (mkstr "with " (plot-style-of plot)
-                                    " linestyle " (incf *style*)))))
-          (if (plot-type-of plot)
-              (space-pad (mkstr (plot-type-of plot))))))))
+                                    " linestyle " (incf *style*)))))))))
 
 ;; @\subsection{Plotting Curves}
 
@@ -442,9 +493,12 @@ are left to options in the individual plot objects."
       (collecting (stringify-plot plot st file-name)
                   into plot-strings)
       (finally (send-gnuplot (setup-gnuplot st))
-               (ecase (plot-type-of setup)
-                 (:3D (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
-                 ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings)))))
+               (let ((plot-strings
+                       (apply #'append (mapcar #'alexandria:ensure-list
+                                               (print plot-strings)))))
+                 (ecase (plot-type-of setup)
+                   (:3D (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
+                   ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
     (send-gnuplot "replot;")))
 
 ;;<<>>=
