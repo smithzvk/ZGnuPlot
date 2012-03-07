@@ -22,7 +22,9 @@
            (iter (while (setf char (read-char-no-hang *gnuplot-stream*)))
              (collecting char))))
     (when err
-      (print (coerce err 'string)))))
+      (print (coerce err 'string)))
+    (setf *default-term* (subseq (zgp::send-gnuplot-raw "show term") 17))
+    (values)))
 
 ;;<<>>=
 (defun do-execute (program args &optional (wt nil))
