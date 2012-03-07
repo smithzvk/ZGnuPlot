@@ -533,7 +533,7 @@ are left to options in the individual plot objects."
    canvas-size))
 
 ;;<<>>=
-(defparameter *default-term* "x11")
+(defvar *default-term* "x11")
 
 ;;<<>>=
 (defun set-default-term (term)
