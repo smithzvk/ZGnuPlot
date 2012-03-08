@@ -2,7 +2,8 @@
 (asdf:defsystem :zgnuplot
   :author "Zach Smith"
   :license "GPLv3 or later. See file COPYING"
-  :depends-on (:cffi :toolbox :defclass-star :iterate :cgn :osicat)
+  :depends-on (:cffi :toolbox :defclass-star
+                     :iterate :alexandria)
   :components ((:file "package")
                (:file "utils")
                (:file "plumbing")
