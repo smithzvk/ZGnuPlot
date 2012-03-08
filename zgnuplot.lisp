@@ -265,24 +265,28 @@ are left to options in the individual plot objects."
 ;; @\subsection{Plot Representations}
 
 ;;<<>>=
-(defclass* data-rep ()
-  ((plot-style "points")
-   (plot-type nil)
-   (plot-smoothing nil)
+(defclass* rep ()
+  ((plot-style)
    (rep-label nil)
-   (x-data nil)
-   (y-data)
    (error-bars nil)
    (smoothing-method :cspline)))
 
 ;;<<>>=
-(defclass* func-rep ()
-  ((func)
-   (plot-style "lines")
-   (plot-type nil)
+(defclass* data-rep (rep)
+  ((plot-style :points)
    (rep-label nil)
-   (error-bars nil)
-   (smoothing-method nil)))
+   (x-data nil)
+   (y-data)
+   (smoothing-method :cspline)))
+
+;;<<>>=
+(defclass* func-rep (rep)
+  ((func)
+   (plot-style :lines)
+   (rep-label nil)
+   (smoothing-method nil)
+   (n-samples nil)
+   (adaptive-sampling nil)))
 
 ;;<<>>=
 (defparameter *gnuplot-setup* (make-instance 'gnuplot-setup :x-range '(0 1)))
