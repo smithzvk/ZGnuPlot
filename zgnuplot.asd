@@ -3,7 +3,8 @@
   :author "Zach Smith"
   :license "GPLv3 or later. See file COPYING"
   :depends-on (:cffi :toolbox :defclass-star
-                     :iterate :alexandria)
+                     :iterate :alexandria
+                     :osicat)
   :components ((:file "package")
                (:file "utils")
                (:file "plumbing")
