@@ -8,6 +8,7 @@
   :components ((:file "package")
                (:file "utils")
                (:file "plumbing")
+               (:file "color-schemes")
                (:file "zgnuplot"))
   :serial t)
 
