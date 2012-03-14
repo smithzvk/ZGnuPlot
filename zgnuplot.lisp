@@ -101,6 +101,11 @@
   (let ((*print-case* :downcase))
     (format nil "~A" keyword)))
 
+;; @The <<setup-gnuplot>> function holds all almost all of the plotting smarts.
+;; It is a mess, mostly due to the fact that the gnuplot interface is a mess.
+;; Good luck to those who edit it.
+
+;;<<>>=
 (defun setup-gnuplot (setup)
   "The job of this function is to create a string that holds all of the state
 for the gnuplot plot.  This means makes some intelligent defaults.  Some things
