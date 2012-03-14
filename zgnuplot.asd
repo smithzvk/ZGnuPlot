@@ -43,3 +43,23 @@
 ;; +@utils.lisp
 ;; +@plumbing.lisp
 ;; +@zgnuplot.lisp
+
+;; @\section{Acknowledgements}
+
+;; This library was coded primarily by myself, however I am not a Gnuplot
+;; expert, so several individuals helped (although throuugh blog posts, not in
+;; person).
+
+;; \begin{itemize}
+
+;; \item The maintainer of the blog Gnuplotting: http://www.gnuplotting.org/
+
+;; \item A person under the psuedonym Gnuplotter:
+;; http://gnuplot-tricks.blogspot.com/
+
+;; \item And of course, the Gnuplot team's demo page:
+;; http://gnuplot.sourceforge.net/demo_4.6/
+
+;; \end{itemize}
+
+;; \end{document}
