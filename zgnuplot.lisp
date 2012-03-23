@@ -394,9 +394,7 @@ are left to options in the individual plot objects."
         (remove
          nil
          (list "'" (namestring file-name) "' "
-               (if (rep-label-of plot)
-                   (space-pad (mkstr "title '" (rep-label-of plot) "'"))
-                   (space-pad "notitle"))
+               (space-pad "notitle")
                " smooth " (keyword-to-string (smoothing-method-of plot))
                (if (error-bars-of plot)
                    (if (plot-style-of plot)
