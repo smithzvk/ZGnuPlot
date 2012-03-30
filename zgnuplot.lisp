@@ -514,7 +514,7 @@ are left to options in the individual plot objects."
 (defun plot (state &rest plots)
   (if *gnuplot-stream*
       (apply #'%plot state (mapcar 'infer-rep plots))
-      (with-gnuplot (:linux)
+      (with-gnuplot
         (apply #'%plot state (mapcar 'infer-rep plots)))))
 
 ;; @\subsection{Polar Plots}
