@@ -8,5 +8,8 @@
            #:splot
            #:plot
            #:*gnuplot-setup*
-           #:with-gnuplot))
+           #:with-gnuplot
+           #:start-gnuplot
+           #:close-gnuplot
+           #:send-gnuplot))
 
