@@ -110,7 +110,8 @@ Taken from LTK."
 
 ;;<<>>=
 (defun close-gnuplot ()
-  (close-process-stream *gnuplot-stream*))
+  (close-process-stream *gnuplot-stream*)
+  (setf *gnuplot-stream* nil))
 
 (defparameter *debug* nil)
 
