@@ -2,8 +2,14 @@
 (in-package :zgnuplot)
 
 ;;<<>>=
-(defun determine-minimum-arity (fn &optional (ranges (tb:roll-list '((.1 1))))
-                                             (maximum-arity-tried 10))
+#+sbcl
+(defun determine-minimum-arity (fn &optional maximum-arity-tried ranges)
+  (declare (ignore maximum-arity-tried ranges))
+  (length (find-if (lambda (x) (member x '(&rest &optional &keyword)))
+                   (sb-introspect:function-lambda-list fn))))
+#+(not (or sbcl))
+(defun determine-minimum-arity (fn &optional (maximum-arity-tried 10)
+                                             (ranges (tb:roll-list '((.1 1)))))
   (iter (for arity from 0 to maximum-arity-tried)
     (until (ignore-errors (apply fn (mapcar #'first (head ranges arity)))))
     (finally (if (>= arity maximum-arity-tried)
@@ -11,8 +17,21 @@
                  (return arity)))))
 
 ;;<<>>=
-(defun determine-arity (fn &optional (ranges (tb:roll-list '((.1 1))))
-                                     (maximum-arity-tried 10))
+#+sbcl
+(defun determine-arity (fn &optional maximum-arity-tried ranges)
+  (declare (ignore maximum-arity-tried ranges))
+  (let* ((arglist (sb-introspect:function-lambda-list fn))
+         (min-arity (determine-minimum-arity fn maximum-arity-tried ranges)))
+    (cond ((or (member '&allow-other-keys arglist)
+               (member '&rest arglist))
+           (values min-arity nil))
+          (t (values
+              min-arity
+              (length (remove-if (lambda (x) (member x '(&optional &key)))
+                                 arglist)))))))
+#+(not (or sbcl))
+(defun determine-arity (fn &optional (maximum-arity-tried 10)
+                                     (ranges (tb:roll-list '((.1 1)))))
   (let ((min nil))
     (iter (for arity from 0 to maximum-arity-tried)
       (let ((res (ignore-errors (apply fn (mapcar #'first (head ranges arity))))))
