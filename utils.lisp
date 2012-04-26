@@ -5,8 +5,10 @@
 #+sbcl
 (defun determine-minimum-arity (fn &optional maximum-arity-tried ranges)
   (declare (ignore maximum-arity-tried ranges))
-  (length (find-if (lambda (x) (member x '(&rest &optional &keyword)))
-                   (sb-introspect:function-lambda-list fn))))
+  (let ((args (sb-introspect:function-lambda-list fn)))
+    (- (length args)
+       (length (find-if (lambda (x) (member x '(&rest &optional &keyword)))
+                        args)))))
 #+(not (or sbcl))
 (defun determine-minimum-arity (fn &optional (maximum-arity-tried 10)
                                              (ranges (tb:roll-list '((.1 1)))))
