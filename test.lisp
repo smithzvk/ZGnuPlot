@@ -4,6 +4,15 @@
 ;; @In this section we specify test plots.  These tests often need visual
 ;; confirmation.
 
+(= (zgnuplot::determine-minimum-arity 'sin) 1)
+(equal (multiple-value-list (zgnuplot::determine-arity 'sin)) '(1 1))
+
+(plot-type-of (sniff-plot (lambda (x) (+ x))))
+(plot-type-of (sniff-plot (lambda (x y) (+ x y))))
+
+(determine-range-dimensionality 'sin)
+(determine-range-dimensionality (lambda (x y) (vector x y x)))
+(determine-range-dimensionality (lambda (x y) (ima:append-imas (list (vector x y x) (vector x y x)) 0)))
 ;; @\section{2D Plots}
 
 ;; @\subsection{Curves}
