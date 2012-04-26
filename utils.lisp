@@ -42,3 +42,12 @@
         (finally (return (values min (if (>= arity maximum-arity-tried)
                                          nil
                                          (- arity 1)))))))))
+
+(defun determine-range-dimensionality (fn &optional (ranges (tb:roll-list '((.1 1)))))
+  (ima:ima-dimension
+   (ima:ensure-ima
+    (apply fn (mapcar #'first
+                      (head ranges
+                            (determine-minimum-arity fn 10 ranges)))))
+   0))
+
