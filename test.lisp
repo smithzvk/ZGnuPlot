@@ -111,3 +111,17 @@
 ;; @\section{3D Plots}
 
 ;; @\subsection{Surface Plots}
+
+;; @\section{Showing Off}
+
+;; @Here we include a series of plots that are for the sole purpose of showing
+;; off and, I guess, providing examples that people can work off of.
+
+;; plotting points on the surface of a sphere
+
+;; Making a histogram of those points
+
+;; making those globes like in the gnuplot demos
+
+;; fractals?  strange attractors?
+
