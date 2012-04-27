@@ -82,6 +82,7 @@
    (x2-range '(-1 1))
    (y2-range '(-1 1))
    (y-range '(-1 1))
+   (cb-range '(-1 1))
    (z-range '(-1 1))
    (theta-range (list (- pi) pi))
    (u-range '(0 1)) (v-range '(0 1))
@@ -149,6 +150,8 @@ are left to options in the individual plot objects."
         (format-ext out "set y2range[~{~A~^:~}];" (y2-range-of setup)))
     (if (z-range-of setup)
         (format-ext out "set zrange[~{~A~^:~}];" (z-range-of setup)))
+    (if (cb-range-of setup)
+        (format-ext out "set cbrange[~{~A~^:~}];" (cb-range-of setup)))
 
     ;; If autoscale is explicitly set, use that value.  If it is just T, set it
     ;; to a `smart' value: (:x :y) for polar, (:y) for :2D, and (:z) for :3D.
