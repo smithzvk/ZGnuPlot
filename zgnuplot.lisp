@@ -88,6 +88,7 @@
    (u-range '(0 1)) (v-range '(0 1))
    ;; We don't use autoscale as it screws up when we plot functions
    (autoscale nil)
+   (palette '(rgbformula 33 13 10))
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
@@ -123,6 +124,13 @@ are left to options in the individual plot objects."
         pointtype ~A pointsize ~A;~%"
        index color line-type (line-width-of setup)
        symbol (point-size-of setup)))
+
+    ;; Better colors for pm3d
+    (format-ext out "set palette rgbformula ~{~A~^,~};"
+                (rest (palette-of setup)))
+    ;; This will interpolate your 3d plot in some optimal sense.  This makes it
+    ;; quite slow, though.
+    ;; (format-ext out "set pm3d interpolate 0,0;")
 
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
@@ -416,6 +424,104 @@ are left to options in the individual plot objects."
               (if (rep-label-of plot)
                   (space-pad (mkstr "title '" (rep-label-of plot) "'"))
                   (space-pad "notitle"))
+;;<<>>=
+(defvar *ignore-errors* t)
+
+;;<<>>=
+(defmethod stringify-plot ((plot func-rep) setup file-name)
+  (with-open-file (out file-name :direction :output :if-exists :supersede)
+    (if (eql :3D (plot-type-of setup))
+        (let ((x-range-vals (x-range-of setup))
+              (y-range-vals (y-range-of setup)))
+          (let ((x-range (- (second x-range-vals)
+                            (first x-range-vals)))
+                (y-range (- (second y-range-vals)
+                            (first y-range-vals))))
+            (iter (for x
+                    from (first x-range-vals)
+                    to (+ (* 1/2 x-range (/ (n-samples-of setup)))
+                          (second x-range-vals))
+                    by (/ x-range (n-samples-of setup)))
+              (iter (for y
+                      from (first y-range-vals)
+                      to (+ (* 1/2 y-range (/ (n-samples-of setup)))
+                            (second y-range-vals))
+                      by (/ y-range (n-samples-of setup)))
+                (let ((val (if *ignore-errors*
+                               (ignore-errors (funcall (func-of plot) x y))
+                               (funcall (func-of plot) x y))))
+                  (if val
+                      (format-ext out "~A ~A ~A~%" x y val)
+                      (format-ext out "~%"))))
+              (format-ext out "~%"))))
+        (let ((range-vals (if (eql :polar (plot-type-of setup))
+                              (theta-range-of setup)
+                              (x-range-of setup))))
+          (cond ((error-bars-of plot)
+                 (warn "No error lines yet.")
+                 (let ((range (- (second range-vals)
+                                 (first range-vals))))
+                   (iter (for x
+                           from (first range-vals)
+                           to (+ (* 1/2 range (/ (n-samples-of setup)))
+                                 (second range-vals))
+                           by (/ range (n-samples-of setup)))
+                     (let ((val (if *ignore-errors*
+                                    (ignore-errors
+                                     (multiple-value-list (funcall (func-of plot) x)))
+                                    (multiple-value-list (funcall (func-of plot) x)))))
+                       (if val
+                           (format-ext out "~{~A ~}~%" (cons x val))
+                           (format-ext out "~%"))))))
+                (t (let ((range (- (second range-vals)
+                                   (first range-vals))))
+                     (iter (for x
+                             from (first range-vals)
+                             to (+ (* 1/2 range (/ (n-samples-of setup)))
+                                   (second range-vals))
+                             by (/ range (n-samples-of setup)))
+                       (let ((val (if *ignore-errors*
+                                      (ignore-errors (funcall (func-of plot) x))
+                                      (funcall (func-of plot) x))))
+                         (if val
+                             (format-ext out "~A ~A~%" x val)
+                             (format-ext out "~%"))))))))))
+  (if (eql :3d (plot-type-of setup))
+      (apply
+       #'mkstr
+       (remove
+        nil
+        (list "'" (namestring file-name) "' "
+              (if (rep-label-of plot)
+                  (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+                  (space-pad "notitle"))
+              (if (smoothing-method-of plot)
+                  (space-pad (mkstr "smooth " (keyword-to-string
+                                               (smoothing-method-of plot)))))
+              (space-pad (mkstr "with pm3d")))))
+              ;; (if (error-bars-of plot)
+              ;;     (if (plot-style-of plot)
+              ;;         (cond ((eql :lines (plot-style-of plot))
+              ;;                (space-pad "with errorlines"))
+              ;;               ((eql :points (plot-style-of plot))
+              ;;                (space-pad "with errorbars")))
+              ;;         (space-pad "with errorbars"))
+              ;;     (if (plot-style-of plot)
+              ;;         (space-pad (mkstr "with " (plot-style-to-string
+              ;;                                    (plot-style-of plot))
+              ;;                           " linestyle " (incf *style*))))
+              ;;     )
+      (apply
+       #'mkstr
+       (remove
+        nil
+        (list "'" (namestring file-name) "' "
+              (if (rep-label-of plot)
+                  (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+                  (space-pad "notitle"))
+              (if (smoothing-method-of plot)
+                  (space-pad (mkstr "smooth " (keyword-to-string
+                                               (smoothing-method-of plot)))))
               (if (error-bars-of plot)
                   (if (plot-style-of plot)
                       (cond ((eql :lines (plot-style-of plot))
@@ -427,67 +533,6 @@ are left to options in the individual plot objects."
                       (space-pad (mkstr "with " (plot-style-to-string
                                                  (plot-style-of plot))
                                         " linestyle " (incf *style*))))))))))
-
-;;<<>>=
-(defvar *ignore-errors* t)
-
-;;<<>>=
-(defmethod stringify-plot ((plot func-rep) setup file-name)
-  (with-open-file (out file-name :direction :output :if-exists :supersede)
-    (let ((range-vals (if (eql :polar (plot-type-of setup))
-                          (theta-range-of setup)
-                          (x-range-of setup))))
-      (cond ((error-bars-of plot)
-             (warn "No error lines yet.")
-             (let ((range (- (second range-vals)
-                             (first range-vals))))
-               (iter (for x
-                       from (first range-vals)
-                       to (+ (* 1/2 range (/ (n-samples-of setup)))
-                             (second range-vals))
-                       by (/ range (n-samples-of setup)))
-                 (let ((val (if *ignore-errors*
-                                (ignore-errors
-                                 (multiple-value-list (funcall (func-of plot) x)))
-                                (multiple-value-list (funcall (func-of plot) x)))))
-                   (if val
-                       (format-ext out "~{~A ~}~%" (cons x val))
-                       (format-ext out "~%"))))))
-            (t (let ((range (- (second range-vals)
-                               (first range-vals))))
-                 (iter (for x
-                         from (first range-vals)
-                         to (+ (* 1/2 range (/ (n-samples-of setup)))
-                               (second range-vals))
-                         by (/ range (n-samples-of setup)))
-                   (let ((val (if *ignore-errors*
-                                  (ignore-errors (funcall (func-of plot) x))
-                                  (funcall (func-of plot) x))))
-                     (if val
-                         (format-ext out "~A ~A~%" x val)
-                         (format-ext out "~%")))))))))
-  (apply
-   #'mkstr
-   (remove
-    nil
-    (list "'" (namestring file-name) "' "
-          (if (rep-label-of plot)
-              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
-              (space-pad "notitle"))
-          (if (smoothing-method-of plot)
-              (space-pad (mkstr "smooth " (keyword-to-string
-                                           (smoothing-method-of plot)))))
-          (if (error-bars-of plot)
-              (if (plot-style-of plot)
-                  (cond ((eql :lines (plot-style-of plot))
-                         (space-pad "with errorlines"))
-                        ((eql :points (plot-style-of plot))
-                         (space-pad "with errorbars")))
-                  (space-pad "with errorbars"))
-              (if (plot-style-of plot)
-                  (space-pad (mkstr "with " (plot-style-to-string
-                                             (plot-style-of plot))
-                                    " linestyle " (incf *style*)))))))))
 
 ;; @\subsection{Plotting Curves}
 
