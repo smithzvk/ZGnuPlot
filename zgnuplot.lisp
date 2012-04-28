@@ -61,7 +61,7 @@
    ;; Controlling the key
    (key nil)
    (key-position :top-right)
-   (key-verticle t)
+   (key-vertical t)
    (key-inset t)
    ;; Controlling the tic-marks
    (border t)
@@ -192,7 +192,7 @@ are left to options in the individual plot objects."
     (if (key-of setup)
         (format-ext out "set key ~A ~A ~A;"
                     (if (key-inset-of setup) "ins" "out")
-                    (if (key-verticle-of setup) "vert" "horiz")
+                    (if (key-vertical-of setup) "vert" "horiz")
                     (case (key-position-of setup)
                       (:top-left "top left")
                       (:top-center "top center")
