@@ -180,14 +180,17 @@ are left to options in the individual plot objects."
     (format-ext out "unset autoscale;~%")
     (if (autoscale-of setup)
         (let ((autoscale (if (eql t (autoscale-of setup))
-                             (cond ((eql :polar (plot-type-of setup))
-                                    (list :x :y))
-                                   ((eql :2D (plot-type-of setup))
-                                    (list :y))
-                                   ((eql :3D (plot-type-of setup))
-                                    (list :z))
-                                   (t (format-ext out "set autoscale;~%")
-                                      nil))
+                             (case (plot-type-of setup)
+                               ((:polar)
+                                (list :x :y :z :cb))
+                               (:2D
+                                (list :y :z :cb))
+                               ((:3D  :map)
+                                (list :z :cb))
+                               (othewise
+                                ;; If we don't know about this plot type, just
+                                ;; autoscale everything
+                                (list :x :y :z :cb)))
                              (alexandria:ensure-list (autoscale-of setup)))))
           (iter (for axis in autoscale)
             (format-ext out "set autoscale ~A;~%" (keyword-to-string axis)))))
