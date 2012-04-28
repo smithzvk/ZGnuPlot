@@ -292,7 +292,7 @@ are left to options in the individual plot objects."
     (case (plot-type-of setup)
       (:polar (format-ext out "set polar;~%"))
       (:parametric (format-ext out "set parametric;~%"))
-      (otherwise (format-ext out "unset parametric;~% unset polar;~%")))
+      (otherwise (format-ext out "unset parametric;~%unset polar;~%")))
 
     ;; Extra commands to send
     (format out "~A" (extra-commands-of setup))))
