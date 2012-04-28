@@ -89,6 +89,7 @@
    ;; We don't use autoscale as it screws up when we plot functions
    (autoscale nil)
    (palette '(rgbformula 33 13 10))
+   (coloring-method :mean)
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
@@ -128,9 +129,17 @@ are left to options in the individual plot objects."
     ;; Better colors for pm3d
     (format-ext out "set palette rgbformula ~{~A~^,~};"
                 (rest (palette-of setup)))
-    ;; This will interpolate your 3d plot in some optimal sense.  This makes it
-    ;; quite slow, though.
-    ;; (format-ext out "set pm3d interpolate 0,0;")
+
+    ;; Determine how colors are determined from the z coordinate in a 3D graph
+    ;; or map.
+    (ecase (coloring-method-of setup)
+      (:interpolate
+       ;; This will interpolate your 3d plot in some optimal sense.  This makes it
+       ;; quite slow, though.
+       (format-ext out "set pm3d interpolate 0,0;"))
+      ((:mean :geomean :median :min :max :c1 :c2 :c3 :c4)
+       (format-ext out "set pm3d corners2color ~A;"
+                   (keyword-to-string (coloring-method-of setup)))))
 
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
