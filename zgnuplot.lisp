@@ -93,7 +93,8 @@
    ;; styles for lines and points
    (styles *muted-colors*)
    (line-width 1.5)
-   (point-size 1.5)))
+   (point-size 1.5)
+   (extra-commands "")))
 
 (defvar *style* 0)
 
@@ -291,7 +292,10 @@ are left to options in the individual plot objects."
     (case (plot-type-of setup)
       (:polar (format-ext out "set polar;~%"))
       (:parametric (format-ext out "set parametric;~%"))
-      (otherwise (format-ext out "unset parametric;~% unset polar;~%")))))
+      (otherwise (format-ext out "unset parametric;~% unset polar;~%")))
+
+    ;; Extra commands to send
+    (format out "~A" (extra-commands-of setup))))
 
 ;; @\section{2D Plotting}
 
