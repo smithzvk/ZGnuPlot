@@ -141,6 +141,10 @@ are left to options in the individual plot objects."
        (format-ext out "set pm3d corners2color ~A;"
                    (keyword-to-string (coloring-method-of setup)))))
 
+    ;; Maps
+    (if (eql :map (plot-type-of setup))
+        (format-ext out "set pm3d map;"))
+
     ;; If logscale is set, use that value.  If it is just T, let gnuplot do what
     ;; it thinks it should do.
     (format-ext out "unset logscale;")
@@ -439,7 +443,7 @@ are left to options in the individual plot objects."
 ;;<<>>=
 (defmethod stringify-plot ((plot func-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
-    (if (eql :3D (plot-type-of setup))
+    (if (member (plot-type-of setup) '(:map :3d))
         (let ((x-range-vals (x-range-of setup))
               (y-range-vals (y-range-of setup)))
           (let ((x-range (- (second x-range-vals)
@@ -495,7 +499,7 @@ are left to options in the individual plot objects."
                          (if val
                              (format-ext out "~A ~A~%" x val)
                              (format-ext out "~%"))))))))))
-  (if (eql :3d (plot-type-of setup))
+  (if (member (plot-type-of setup) '(:3d :map))
       (apply
        #'mkstr
        (remove
@@ -563,7 +567,7 @@ are left to options in the individual plot objects."
                        (apply #'append (mapcar #'alexandria:ensure-list
                                                plot-strings))))
                  (ecase (plot-type-of setup)
-                   (:3D (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
+                   ((:3D :map) (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
                    ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
     (send-gnuplot "replot;")))
 
