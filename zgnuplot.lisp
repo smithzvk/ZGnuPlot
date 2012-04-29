@@ -116,6 +116,9 @@ for the gnuplot plot.  This means makes some intelligent defaults.  Some things
 are left to options in the individual plot objects."
   (with-output-to-string (out)
     (format-ext out "set term ~A;~%" *default-term*)
+    (format-ext
+       out
+       "set style line 30 linecolor rgb '#000000' linetype 1 linewidth .5;")
     (iter
       (for (color line-type) in (tb:roll-list (styles-of setup)))
       (for symbol in (tb:roll-list *symbols*))
@@ -141,6 +144,8 @@ are left to options in the individual plot objects."
       ((:mean :geomean :median :min :max :c1 :c2 :c3 :c4)
        (format-ext out "set pm3d corners2color ~A;~%"
                    (keyword-to-string (coloring-method-of setup)))))
+
+    (format-ext out "set pm3d hidden3d 30;~%")
 
     ;; Maps
     (if (eql :map (plot-type-of setup))
