@@ -188,9 +188,9 @@ are left to options in the individual plot objects."
                              (case (plot-type-of setup)
                                ((:polar)
                                 (list :x :y :z :cb))
-                               (:2D
+                               (:2d
                                 (list :y :z :cb))
-                               ((:3D  :map)
+                               ((:3d :map)
                                 (list :z :cb))
                                (othewise
                                 ;; If we don't know about this plot type, just
