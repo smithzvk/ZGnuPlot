@@ -310,7 +310,7 @@ are left to options in the individual plot objects."
 ;; @\subsection{Plot Representations}
 
 ;;<<>>=
-(defclass* rep ()
+(defclass* rep (gnuplot-setup)
   ((plot-style)
    (rep-label nil)
    (error-bars nil)
@@ -438,6 +438,192 @@ are left to options in the individual plot objects."
 (defun stringify-plot2 (plottable file-name &optional (process t))
   (iter (for fn in *dispatch*)
     (thereis (funcall fn plottable file-name process))))
+
+(defun dump-data (plot file-name)
+  (with-open-file (out file-name :direction :output :if-exists :supersede)
+    (format-ext out "~{~{~A ~}~%~}"
+                (apply
+                 #'mapcar #'list
+                 (remove nil
+                         (list (x-data-of plot)
+                               (y-data-of plot)
+                               (error-bars-of plot)))))))
+
+(define-gnuplot-dispatch ((plot data-rep) file-name process)
+    ((plot-type :2d)
+     (plot-style :smooth-lines-and-points))
+  (when process (dump-data plot file-name))
+  (list
+   (stringify-plot2 (modf (plot-style-of plot) :smooth-lines)
+                    file-name nil)
+   ;; We need to decrement the style counter so that the color of the line and
+   ;; the points are the same.
+   (progn
+     (decf *style*)
+     (stringify-plot2 (modf (plot-style-of plot) :points)
+                      file-name nil))))
+
+(define-gnuplot-dispatch ((plot data-rep) file-name process)
+    ((plot-type :2d)
+     (plot-style '(:points :lines :lines-and-points) 'member))
+  (when process (dump-data plot file-name))
+  (apply
+   #'mkstr
+   (remove
+    nil
+    (list "'" (namestring file-name) "' "
+          (if (rep-label-of plot)
+              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+              (space-pad "notitle"))
+          (mkstr
+           (if (error-bars-of plot)
+               (if (plot-style-of plot)
+                   (cond ((eql :lines (plot-style-of plot))
+                          (space-pad "with errorlines"))
+                         ((eql :points (plot-style-of plot))
+                          (space-pad "with errorbars")))
+                   (space-pad "with errorbars"))
+               (if (plot-style-of plot)
+                   (space-pad (mkstr "with " (plot-style-to-string
+                                              (plot-style-of plot))))))
+           " linestyle " (incf *style*))))))
+
+(define-gnuplot-dispatch ((plot data-rep) file-name process)
+    ((plot-type :2d)
+     (plot-style :smooth-lines))
+  (when process (dump-data plot file-name))
+  (apply
+   #'mkstr
+   (remove
+    nil
+    (list "'" (namestring file-name) "' "
+          (if (rep-label-of plot)
+              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+              (space-pad "notitle"))
+          (space-pad (mkstr "smooth " (keyword-to-string
+                                       (smoothing-method-of plot))))
+          (mkstr
+           (if (error-bars-of plot)
+               (if (plot-style-of plot)
+                   (cond ((eql :lines (plot-style-of plot))
+                          (space-pad "with errorlines"))
+                         ((eql :points (plot-style-of plot))
+                          (space-pad "with errorbars")))
+                   (space-pad "with errorbars"))
+               (if (plot-style-of plot)
+                   (space-pad (mkstr "with lines"))))
+           " linestyle " (incf *style*))))))
+
+(defun grid-sample (out fn coords ranges)
+  (if ranges
+      (destructuring-bind (lo hi n-samples) (first ranges)
+        (let ((range (- hi lo)))
+          (iter (for x
+                  from lo
+                  to (+ (* 1/2 range (/ n-samples)) hi)
+                  by (/ range n-samples))
+            (grid-sample out
+                         (lambda (&rest args) (apply fn x args))
+                         (cons x coords)
+                         (rest ranges)))
+          (format-ext out "~%")))
+      (let ((val (if *ignore-errors*
+                     (ignore-errors (multiple-value-list (funcall fn)))
+                     (multiple-value-list (funcall fn)))))
+        (if val
+            (format-ext out "~{~A ~} ~{~A ~}~%" (reverse coords) val)
+            (format-ext out "~%")))))
+
+(define-gnuplot-dispatch ((plot func-rep) file process)
+    ((plot-type '(:map :3d) 'member))
+  (when process 
+    (with-open-file (out file :direction :output :if-exists :supersede)
+      (grid-sample out (func-of plot) nil
+                   (if (listp (n-samples-of plot))
+                       (mapcar (lambda (x y) (append x y))
+                               (list (x-range-of plot)
+                                     (y-range-of plot))
+                               (n-samples-of plot))
+                       (mapcar (lambda (x) (append x (list (n-samples-of plot))))
+                               (list (x-range-of plot)
+                                     (y-range-of plot)))))))
+  (apply
+   #'mkstr
+   (remove
+    nil
+    (list "'" (namestring file) "' "
+          (if (rep-label-of plot)
+              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+              (space-pad "notitle"))
+          (if (smoothing-method-of plot)
+              (space-pad (mkstr "smooth " (keyword-to-string
+                                           (smoothing-method-of plot)))))
+          (space-pad (mkstr "with pm3d"))))))
+
+(define-gnuplot-dispatch ((plot func-rep) file-name process)
+    ((plot-type '(:2d :polar) 'member)
+     (error-bars nil))
+  (when process
+    (with-open-file (out file-name :direction :output :if-exists :supersede)
+      (let ((range-vals (if (eql :polar (plot-type-of plot))
+                            (theta-range-of plot)
+                            (x-range-of plot))))
+        (grid-sample
+         out (func-of plot) nil
+         (list (append range-vals (list (n-samples-of plot))))))))
+  (apply
+   #'mkstr
+   (remove
+    nil
+    (list "'" (namestring file-name) "' "
+          (if (rep-label-of plot)
+              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+              (space-pad "notitle"))
+          (if (smoothing-method-of plot)
+              (space-pad (mkstr "smooth " (keyword-to-string
+                                           (smoothing-method-of plot)))))
+          (if (plot-style-of plot)
+              (space-pad (mkstr "with " (plot-style-to-string
+                                         (plot-style-of plot))
+                                " linestyle " (incf *style*))))))))
+
+(define-gnuplot-dispatch ((plot func-rep) file-name process)
+    ((plot-type '(:2d :polar) 'member)
+     error-bars)
+  (when process
+    (with-open-file (out file-name :direction :output :if-exists :supersede)
+      (let ((range-vals (if (eql :polar (plot-type-of plot))
+                            (theta-range-of plot)
+                            (x-range-of plot))))
+        (grid-sample
+         out (func-of plot) nil
+         (list (append range-vals (list (n-samples-of plot))))))))
+  (warn "No error lines yet.")
+  (apply
+   #'mkstr
+   (remove
+    nil
+    (list "'" (namestring file-name) "' "
+          (if (rep-label-of plot)
+              (space-pad (mkstr "title '" (rep-label-of plot) "'"))
+              (space-pad "notitle"))
+          (if (smoothing-method-of plot)
+              (space-pad (mkstr "smooth " (keyword-to-string
+                                           (smoothing-method-of plot)))))
+          ;; this is basically broken
+          (if (error-bars-of plot)
+              (if (plot-style-of plot)
+                  (cond ((eql :lines (plot-style-of plot))
+                         (space-pad "with errorlines"))
+                        ((eql :points (plot-style-of plot))
+                         (space-pad "with errorbars")))
+                  (space-pad "with errorbars"))
+              (if (plot-style-of plot)
+                  (space-pad (mkstr "with " (plot-style-to-string
+                                             (plot-style-of plot))
+                                    " linestyle " (incf *style*)))))))))
+
+
 ;;<<>>=
 (defmethod stringify-plot ((plot data-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)

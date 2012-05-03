@@ -4,7 +4,7 @@
   :license "GPLv3 or later. See file COPYING"
   :depends-on (:cffi :toolbox :defclass-star
                      :iterate :alexandria
-                     :osicat)
+                     :osicat :modf)
   :components ((:file "package")
                (:file "utils")
                (:file "plumbing")
