@@ -394,6 +394,50 @@ are left to options in the individual plot objects."
         (:smooth-lines-and-points
          (error "This does not directly correspond to a gnuplot plot style")))))
 
+;; We develop our own dispatch system instead of using CLOS is because the
+;; dispatch is based on combinations of parameters, not heirarchical as is the
+;; case that CLOS excels at.  The sheer number of classes that would be needed
+;; to fully specify every possibility is very large.  We also don't need the
+;; fancy call chain stuff from CLOS, so we don't miss out on much.
+
+(defvar *dispatch* nil)
+
+(defmacro define-gnuplot-dispatch ((plot-sym file-sym process-sym)
+                                   (&rest values) &body body)
+  (with-gensyms (plot file process)
+    (destructuring-bind (plot-sym plot-type)
+        (if (listp plot-sym) plot-sym (list plot-sym t))
+      `(push
+        (lambda (,plot ,file ,process)
+          (and
+           (typep ,plot ',plot-type)
+           ,@(iter (for value in values)
+               (if (listp value)
+                   (ecase (length value)
+                     (3 (collecting
+                         `(funcall ,(third value)
+                                   (slot-value ,plot ',(first value))
+                                   ,(second value))))
+                     (2 (collecting
+                         `(equal (slot-value ,plot ',(first value))
+                                 ,(second value)))))
+                   (collect `(slot-value ,plot ',value))))
+           (let ((,plot-sym ,plot)
+                 (,file-sym ,file)
+                 (,process-sym ,process))
+             ,@body)))
+        *dispatch*))))
+
+;; Stringify-Plot2 dispatches the plot commands to the appropriate handler.  The
+;; handler, for now, must do two things.  First, it must return a string (or
+;; list of strings) that, when passed to the proper gnuplot plot or splot
+;; command, will plot the data in <file-name> correctly.  Secondly, if and only
+;; if <process> is true, the function should write data (into file <file-name>)
+;; that will be read from gnuplot.
+
+(defun stringify-plot2 (plottable file-name &optional (process t))
+  (iter (for fn in *dispatch*)
+    (thereis (funcall fn plottable file-name process))))
 ;;<<>>=
 (defmethod stringify-plot ((plot data-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
