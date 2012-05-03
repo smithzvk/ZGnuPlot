@@ -623,6 +623,38 @@ are left to options in the individual plot objects."
                                              (plot-style-of plot))
                                     " linestyle " (incf *style*)))))))))
 
+(defun render-equation (plot)
+  (cond ((symbolp plot)
+         (string-downcase (format nil "~A" plot)))
+        (t nil)))
+
+(define-gnuplot-dispatch ((plot (or function symbol)) file-name process)
+    ()
+  (let ((arity (determine-minimum-arity plot)))
+    (stringify-plot2
+     (make-instance 'func-rep
+                    :plot-type (ecase arity
+                                 (1 :2d)
+                                 (2 :2d))
+                    :func plot
+                    :rep-label (render-equation plot)
+                    :n-samples 100
+                    :x-range '(-1 1)
+                    :y-range '(-1 1))
+     file-name
+     process)))
+
+(define-gnuplot-dispatch ((plot list) file-name process)
+    ()
+  (cond ((ima:ima-p (first plot))
+         ;; If first object in the list is an ima, then process them,
+         ;; effectively splicing these into the arg lists
+         (iter (for el ima:in-ima plot)
+           ())))
+  (stringify-plot2
+     (infer-rep plot)
+     file-name
+     process))
 
 ;;<<>>=
 (defmethod stringify-plot ((plot data-rep) setup file-name)
