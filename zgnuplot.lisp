@@ -656,6 +656,27 @@ are left to options in the individual plot objects."
      file-name
      process))
 
+(defun plot2 (setup &rest plots)
+  (let* ((*gnuplot-setup* (or setup *gnuplot-setup* (error "No gnuplot state set.")))
+         (st *gnuplot-setup*)
+         (*style* 0))
+    (unless plots
+      (error "No plots given"))
+    (iter (for plot in plots)
+      (for file-name =
+        (pathname (osicat-posix:mktemp
+                   (namestring osicat:*temporary-directory*))))
+      (collecting (stringify-plot2 plot file-name)
+                  into plot-strings)
+      (finally (send-gnuplot (setup-gnuplot st))
+               (let ((plot-strings
+                       (apply #'append (mapcar #'alexandria:ensure-list
+                                               plot-strings))))
+                 (ecase (plot-type-of setup)
+                   ((:3D :map) (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
+                   ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
+    (send-gnuplot "replot;")))
+
 ;;<<>>=
 (defmethod stringify-plot ((plot data-rep) setup file-name)
   (with-open-file (out file-name :direction :output :if-exists :supersede)
