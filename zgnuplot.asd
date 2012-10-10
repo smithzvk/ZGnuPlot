@@ -3,6 +3,7 @@
   :author "Zach Smith"
   :license "GPLv3 or later. See file COPYING"
   :depends-on (:cffi :toolbox :defclass-star
+                     :index-mapped-arrays
                      :iterate :alexandria
                      :osicat :modf)
   :components ((:file "package")
