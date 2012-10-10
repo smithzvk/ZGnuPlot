@@ -313,6 +313,7 @@ are left to options in the individual plot objects."
 (defclass* rep (gnuplot-setup)
   ((plot-style)
    (rep-label nil)
+   (line-style nil)
    (error-bars nil)
    (smoothing-method :cspline)))
 
@@ -707,7 +708,7 @@ are left to options in the individual plot objects."
                               (space-pad "with errorbars")))
                        (space-pad "with errorbars"))
                    (if (plot-style-of plot)
-                       (space-pad (mkstr "with points linestyle " (incf *style*))))))))
+                       (space-pad (mkstr "with points linestyle " (or (line-style-of plot) (incf *style*)))))))))
        (apply
         #'mkstr
         (remove
@@ -723,7 +724,7 @@ are left to options in the individual plot objects."
                               (space-pad "with errorbars")))
                        (space-pad "with errorbars"))
                    (if (plot-style-of plot)
-                       (space-pad (mkstr "with lines linestyle " *style*))))))))
+                       (space-pad (mkstr "with lines linestyle " (or (line-style-of plot) *style*)))))))))
       (apply
        #'mkstr
        (remove
@@ -732,6 +733,19 @@ are left to options in the individual plot objects."
               (if (rep-label-of plot)
                   (space-pad (mkstr "title '" (rep-label-of plot) "'"))
                   (space-pad "notitle"))
+              (mkstr
+               (if (error-bars-of plot)
+                   (if (plot-style-of plot)
+                       (cond ((eql :lines (plot-style-of plot))
+                              (space-pad "with errorlines"))
+                             ((eql :points (plot-style-of plot))
+                              (space-pad "with errorbars")))
+                       (space-pad "with errorbars"))
+                   (if (plot-style-of plot)
+                       (space-pad (mkstr "with " (plot-style-to-string
+                                                  (plot-style-of plot))))))
+               " linestyle " (or (line-style-of plot) (incf *style*))))))))
+
 ;;<<>>=
 (defvar *ignore-errors* t)
 
