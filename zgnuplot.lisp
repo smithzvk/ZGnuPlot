@@ -685,10 +685,9 @@ are left to options in the individual plot objects."
                 (apply
                  #'mapcar #'list
                  (remove nil
-                         (list* (x-data-of plot)
+                         (list (x-data-of plot)
                                 (y-data-of plot)
-                                (interprete-error-bars (y-data-of plot)
-                                                       (error-bars-of plot)))))))
+                                (error-bars-of plot))))))
   (if (eql :smooth-lines-and-points (plot-style-of plot))
       ;; We want to draw a smooth line through these points
       (list
