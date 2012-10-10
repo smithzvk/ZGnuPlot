@@ -334,7 +334,7 @@ are left to options in the individual plot objects."
    (adaptive-sampling nil)))
 
 ;;<<>>=
-(defparameter *gnuplot-setup* (make-instance 'gnuplot-setup :x-range '(0 1)))
+(defparameter *gnuplot-setup* (make-gnuplot-setup))
 
 ;;<<>>=
 (defun space-pad (string) (mkstr " " string " "))
@@ -845,33 +845,35 @@ are left to options in the individual plot objects."
 ;; @\subsection{Plotting Curves}
 
 ;;<<>>=
-(defun %plot (setup &rest plots)
-  (let* ((*gnuplot-setup* (or setup *gnuplot-setup* (error "No gnuplot state set.")))
-         (st *gnuplot-setup*)
+(defun %plot (&rest setup-or-plots)
+  (let* ((*gnuplot-setup* (or *gnuplot-setup* (error "No gnuplot state set.")))
          (*style* 0))
-    (unless plots
-      (error "No plots given"))
-    (iter (for plot in plots)
+    (iter (for plot in setup-or-plots)
       (for file-name =
         (pathname (osicat-posix:mktemp
                    (namestring osicat:*temporary-directory*))))
-      (collecting (stringify-plot plot st file-name)
-                  into plot-strings)
-      (finally (send-gnuplot (setup-gnuplot st))
-               (let ((plot-strings
-                       (apply #'append (mapcar #'alexandria:ensure-list
-                                               plot-strings))))
-                 (ecase (plot-type-of setup)
-                   ((:3D :map) (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
-                   ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
-    (send-gnuplot "replot;")))
+      (if (eql (type-of plot) 'gnuplot-setup)
+          (setf *gnuplot-setup* plot)
+          (collecting (stringify-plot plot *gnuplot-setup* file-name)
+                      into plot-strings))
+      (finally
+       (unless plot-strings (error "No plots given"))
+       (send-gnuplot (setup-gnuplot *gnuplot-setup*))
+       (let ((plot-strings
+               (apply #'append (mapcar #'alexandria:ensure-list
+                                       plot-strings))))
+         (ecase (plot-type-of *gnuplot-setup*)
+           ((:3D :map) (send-gnuplot "splot ~{~A~^, ~};" plot-strings))
+           ((:polar :2D) (send-gnuplot "plot ~{~A~^, ~};" plot-strings))))))
+    (send-gnuplot "replot;")
+    setup-or-plots))
 
 ;;<<>>=
-(defun plot (state &rest plots)
+(defun plot (&rest setup-or-plots)
   (if *gnuplot-stream*
-      (apply #'%plot state (mapcar 'infer-rep plots))
+      (apply #'%plot (mapcar 'infer-rep setup-or-plots))
       (with-gnuplot
-        (apply #'%plot state (mapcar 'infer-rep plots)))))
+        (apply #'%plot (mapcar 'infer-rep setup-or-plots)))))
 
 ;; @\subsection{Polar Plots}
 
