@@ -395,6 +395,23 @@ are left to options in the individual plot objects."
         (:smooth-lines-and-points
          (error "This does not directly correspond to a gnuplot plot style")))))
 
+(defun read-file (file n-columns)
+  "Read a simple multicolumn text file."
+  (group (iter (for val in-file file)
+           (collect val))
+         n-columns))
+
+;;<<>>=
+(defmethod stringify-plot ((plot pathname) setup file-name)
+  (let ((n-columns (length (tb:reg-scan-to-strings
+                            "(\\S)*\\s*"
+                            (with-open-file (in plot)
+                              (read-line in))))))
+    (stringify-plot (infer-rep (read-file plot n-columns))
+                    setup file-name)))
+
+(defmethod stringify-plot ((plot string) setup file-name)
+  (stringify-plot (pathname plot) setup file-name))
 ;; We develop our own dispatch system instead of using CLOS is because the
 ;; dispatch is based on combinations of parameters, not heirarchical as is the
 ;; case that CLOS excels at.  The sheer number of classes that would be needed
