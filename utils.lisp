@@ -1,6 +1,25 @@
 
 (in-package :zgnuplot)
 
+(defun roll-list (list)
+  (let ((circular-list (copy-list list)))
+    (setf (cdr (last circular-list)) circular-list)
+    circular-list))
+
+;;; PPCRE extensions
+(defun reg-scan-to-string (regex target-string &key (start 0) (end (length target-string)))
+  (multiple-value-bind (matches registers) (ppcre:scan-to-strings regex target-string :start start :end end)
+    (declare (ignore matches))
+    (values-list (iter (for el in-sequence registers)
+                       (collect el)))))
+
+(defun reg-scan-to-strings (regex target-string
+                                  &key (start 0) (end (length target-string)))
+  (multiple-value-bind (matches registers)
+      (ppcre:scan-to-strings regex target-string :start start :end end)
+    (declare (ignore matches))
+    (coerce registers 'list)))
+
 ;;<<>>=
 #+sbcl
 (defun determine-minimum-arity (fn &optional maximum-arity-tried ranges)
@@ -11,7 +30,7 @@
                         args)))))
 #+(not (or sbcl))
 (defun determine-minimum-arity (fn &optional (maximum-arity-tried 10)
-                                             (ranges (tb:roll-list '((.1 1)))))
+                                             (ranges (roll-list '((.1 1)))))
   (iter (for arity from 0 to maximum-arity-tried)
     (until (ignore-errors (apply fn (mapcar #'first (head ranges arity)))))
     (finally (if (>= arity maximum-arity-tried)
@@ -33,7 +52,7 @@
                                  arglist)))))))
 #+(not (or sbcl))
 (defun determine-arity (fn &optional (maximum-arity-tried 10)
-                                     (ranges (tb:roll-list '((.1 1)))))
+                                     (ranges (roll-list '((.1 1)))))
   (let ((min nil))
     (iter (for arity from 0 to maximum-arity-tried)
       (let ((res (ignore-errors (apply fn (mapcar #'first (head ranges arity))))))
@@ -43,7 +62,7 @@
                                          nil
                                          (- arity 1)))))))))
 
-(defun determine-range-dimensionality (fn &optional (ranges (tb:roll-list '((.1 1)))))
+(defun determine-range-dimensionality (fn &optional (ranges (roll-list '((.1 1)))))
   (ima:ima-dimension
    (ima:ensure-ima
     (apply fn (mapcar #'first

@@ -1,6 +1,6 @@
 
 (defpackage :zgnuplot
-    (:use :cl :toolbox :defclass* :iter :modf :ima)
+    (:use :cl :defclass* :iter :modf :ima :ppcre)
   (:nicknames :zgp)
   (:export #:gnuplot-setup
            #:make-gnuplot-setup

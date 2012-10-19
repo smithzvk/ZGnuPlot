@@ -97,8 +97,8 @@ are left to options in the individual plot objects."
        out
        "set style line 30 linecolor rgb '#000000' linetype 1 linewidth .5;")
     (iter
-      (for (color line-type) in (tb:roll-list (styles-of setup)))
-      (for symbol in (tb:roll-list *symbols*))
+      (for (color line-type) in (roll-list (styles-of setup)))
+      (for symbol in (roll-list *symbols*))
       (for index from 1 to 14)
       (format-ext
        out
@@ -380,7 +380,7 @@ are left to options in the individual plot objects."
 
 ;;<<>>=
 (defmethod stringify-plot ((plot pathname) setup file-name)
-  (let ((n-columns (length (tb:reg-scan-to-strings
+  (let ((n-columns (length (reg-scan-to-strings
                             "(\\S)*\\s*"
                             (with-open-file (in plot)
                               (read-line in))))))
