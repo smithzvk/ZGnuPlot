@@ -13,6 +13,11 @@
 (determine-range-dimensionality 'sin)
 (determine-range-dimensionality (lambda (x y) (vector x y x)))
 (determine-range-dimensionality (lambda (x y) (ima:append-imas (list (vector x y x) (vector x y x)) 0)))
+
+;; (combine-sniffs (make-gnuplot-setup :plot-type :3D) (make-gnuplot-setup :plot-type :2D))
+
+
+
 ;; @\section{2D Plots}
 
 ;; @\subsection{Curves}
@@ -89,28 +94,37 @@
                          :y-range '(0 1.1) :theta-range (list 0 pi))
  (make-instance 'func-rep
                 :func (lambda (theta) (expt (sin theta) 1/16))
-                :rep-label (tb:format-ext nil "(sin(x))^(1/16)"))
+                :rep-label (format-ext nil "(sin(x))^(1/16)"))
  (make-instance 'func-rep
                 :func (lambda (theta) (expt (sin theta) 1/4))
-                :rep-label (tb:format-ext nil "(sin(x))^(1/4)"))
+                :rep-label (format-ext nil "(sin(x))^(1/4)"))
  (make-instance 'func-rep
                 :func (lambda (theta) (expt (sin theta) 1/2))
-                :rep-label (tb:format-ext nil "sqrt(sin(x))"))
+                :rep-label (format-ext nil "sqrt(sin(x))"))
  (make-instance 'func-rep
                 :func (lambda (theta) (sin theta))
-                :rep-label (tb:format-ext nil "sin(x)"))
+                :rep-label (format-ext nil "sin(x)"))
  (make-instance 'func-rep
                 :func (lambda (theta) (expt (sin theta) 2))
-                :rep-label (tb:format-ext nil "sin²(x)"))
+                :rep-label (format-ext nil "sin²(x)"))
  (make-instance 'func-rep
                 :func (lambda (theta) (expt (sin theta) 4))
-                :rep-label (tb:format-ext nil "sin⁴(x)")))
+                :rep-label (format-ext nil "sin⁴(x)")))
 
 ;; @\subsection{Maps}
 
 ;; @\section{3D Plots}
 
 ;; @\subsection{Surface Plots}
+
+;; The proper wap to make a standard surface plot:
+
+;; Banded surface plots like YongXiang was making.  This color scheme is banded
+;; and corresponds to the tic marks on the $z$-axis.  This is actually very nice
+;; from a readability standpoint as well as an aesthetical one.
+
+;; At the very least there had better be lines on the surface (contours), else
+;; why bother?
 
 ;; @\section{Showing Off}
 
@@ -125,3 +139,5 @@
 
 ;; fractals?  strange attractors?
 
+;; Hex-Density plots
+;; http://www.chrisstucchio.com/blog/2012/dont_use_scatterplots.html
