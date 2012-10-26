@@ -1,6 +1,6 @@
 
 (defpackage :zgnuplot
-    (:use :cl :defclass* :iter :modf :ima :ppcre)
+    (:use :cl :hu.dwim.defclass-star :iter :modf :ima :ppcre)
   (:nicknames :zgp)
   (:export #:gnuplot-setup
            #:make-gnuplot-setup

@@ -2,11 +2,10 @@
 (asdf:defsystem :zgnuplot
   :author "Zach Smith"
   :license "GPLv3 or later. See file COPYING"
-  :depends-on (:cffi :defclass-star
-                     :cl-ppcre
-                     :index-mapped-arrays
-                     :iterate :alexandria
-                     :osicat :modf)
+  :depends-on (:cffi :hu.dwim.defclass-star
+               :cl-ppcre :index-mapped-arrays
+               :iterate :alexandria
+               :osicat :modf)
   :components ((:file "package")
                (:file "utils")
                (:file "plumbing")
